@@ -7,6 +7,7 @@
 #include <vector>
 #include <unistd.h>
 #include <sys/select.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 
 using namespace std;
@@ -22,6 +23,7 @@ struct ptp_msg {
 };
 
 struct ptp_err {
+    pid_t pid;
     int sending_process_nr;
     int fildes[2];
 };
@@ -36,7 +38,7 @@ struct msg_t {
 
 const int BSIZE = sizeof(msg_t);
 const int SEED = 555432;
-const int CHILDREN = 5;
+const int CHILDREN = 3;
 
 
 
@@ -44,7 +46,7 @@ int msg_process(int process_nr,int fildes[CHILDREN][2], bool restart)
 {
     cout << "msg_process " << process_nr << " started with pid = " << getpid() << endl;
 
-    close(fildes[process_nr][1]);       //close writing to your read pipe
+    
     fd_set current_fd, ready_fd;
     struct timeval tv;
 
@@ -54,16 +56,18 @@ int msg_process(int process_nr,int fildes[CHILDREN][2], bool restart)
 
     FD_ZERO(&current_fd);
     FD_SET(fildes[process_nr][0],&current_fd);
-    srand(SEED);
+    cout << process_nr << " reading from fd = " << fildes[process_nr][0] << " sent to " << fildes[process_nr][1] << endl;
+    srand(SEED + process_nr);
     tv.tv_sec = 2;
     tv.tv_usec = 0;
 
     if (restart) {
         buffer.msg_type = ERR;
-        
+        cout << "sending ERR with fd = " << fildes[process_nr][0] << " " << fildes[process_nr][1] << endl;
         buffer.contents.ptp_err.fildes[0] = fildes[process_nr][0];
         buffer.contents.ptp_err.fildes[1] = fildes[process_nr][1];
         buffer.contents.ptp_err.sending_process_nr = process_nr;
+        buffer.contents.ptp_err.pid = getpid();
         for (int i = 0; i < CHILDREN; i++)
         {
             if (i == process_nr) continue;
@@ -76,6 +80,7 @@ int msg_process(int process_nr,int fildes[CHILDREN][2], bool restart)
         }
         
     }
+    //close(fildes[process_nr][1]);       //close writing to your read pipe
     
     while(1) {
         ready_fd = current_fd;
@@ -94,8 +99,14 @@ int msg_process(int process_nr,int fildes[CHILDREN][2], bool restart)
             continue;
             } else if (buffer.msg_type == ERR) {
                 //TODO: replace the fildes of the old pipe
-                fildes[buffer.contents.ptp_err.sending_process_nr][0] = buffer.contents.ptp_err.fildes[0];
-                fildes[buffer.contents.ptp_err.sending_process_nr][1] = buffer.contents.ptp_err.fildes[1];
+                cout << process_nr << " ERR recieved from " << buffer.contents.ptp_err.sending_process_nr << endl;
+                close(fildes[buffer.contents.ptp_err.sending_process_nr][0]);
+                close(fildes[buffer.contents.ptp_err.sending_process_nr][1]);
+                int test = syscall(SYS_pidfd_open, buffer.contents.ptp_err.pid, 0);
+                fildes[buffer.contents.ptp_err.sending_process_nr][0] = syscall(SYS_pidfd_getfd, test, buffer.contents.ptp_err.fildes[0],0);
+                perror("recieving the fd 0");
+                fildes[buffer.contents.ptp_err.sending_process_nr][1] = syscall(SYS_pidfd_getfd, test, buffer.contents.ptp_err.fildes[1],0);
+                perror("recieving the fd 1");
             }
             
         }
@@ -107,8 +118,11 @@ int msg_process(int process_nr,int fildes[CHILDREN][2], bool restart)
         while ((dest_process_nr = rand() % CHILDREN) == process_nr) {}
         ret = write(fildes[dest_process_nr][1], &sbuffer, BSIZE);
         if (ret < 0) {
-            cout << process_nr << " failure to write to " << dest_process_nr << endl;
+            perror("write to pipe");
+            cout << process_nr << " failure to write to process " << dest_process_nr << " fd = " << fildes[dest_process_nr][1] << endl;
+            
         }
+        sleep(1);
     }
     return 0;
 }

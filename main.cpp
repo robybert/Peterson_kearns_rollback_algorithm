@@ -45,12 +45,19 @@ pid_t fork_process(int process_nr, int fildes[CHILDREN][2], bool restart) {
 // simulates a failure and restarts the process
 pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2]){
     //TODO: kill the process
+
+    cout << "restart process " << process_nr << endl;
     pid_t new_c_pid;
     kill(pid, SIGKILL);
-    //TODO: make new pipes and close the old pipes
+
+    close(fildes[process_nr][0]);
+    close(fildes[process_nr][1]);
     if (make_pipe(fildes[process_nr], process_nr) == -1) {
         //TODO: make error
     }
+    
+    
+    
 
     //TODO: refork the process and let it send its fd to other processes 
     new_c_pid = fork_process(process_nr, fildes, true);
@@ -80,11 +87,11 @@ int main(int argc, char const *argv[])
     }
     while(1) {
         //rng for time to wait 
-        this_thread::sleep_for(chrono::seconds(3));
+        this_thread::sleep_for(chrono::seconds(15));
         //rng for process selection
-        //int to_restart = rand() % CHILDREN;
+        int to_restart = 0; //rand() % CHILDREN;
         //restart the selected process
-        //c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes);
+        c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes);
         
     }
     return 0;
