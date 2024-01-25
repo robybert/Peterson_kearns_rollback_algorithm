@@ -13,4 +13,4 @@ process.o: process.cpp process.h
 
 
 clean:
-	rm *.o output
+	rm *.o *.h.gch output
