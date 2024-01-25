@@ -4,12 +4,12 @@ CFLAGS = -Wall -g
 
 
 output: main.o process.o
-	$(CC) $(CFLAGS) -o output main.o
-main.o: main.cpp process.cpp
-	$(CC) $(CFLAGS) -c process.cpp main.cpp
+	$(CC) $(CFLAGS) -o output main.o process.o
+main.o: main.cpp process.h
+	$(CC) $(CFLAGS) -c  main.cpp process.h
 
-process.o: process.cpp
-	$(CC) $(CFLAGS) -c process.cpp
+process.o: process.cpp process.h
+	$(CC) $(CFLAGS) -c  process.cpp process.h
 
 
 clean:
