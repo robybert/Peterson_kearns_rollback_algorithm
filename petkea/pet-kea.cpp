@@ -203,7 +203,7 @@ int Pet_kea::store_msg(struct msg_t *msg, bool recipient)
     if (msg_cnt % SAVE_CNT == 0)
         checkpoint();
 
-    cout << id << "     " << recipient << "      " << msg->contents.ptp_msg.msg_buf << "     time_v: " << time_v[0] << "-" << time_v[1] << endl;
+    // cout << id << "     " << recipient << "      " << msg->contents.ptp_msg.msg_buf << "     time_v: " << time_v[0] << "-" << time_v[1] << endl;
     return 0;
 }
 
@@ -219,7 +219,7 @@ Pet_kea::Pet_kea(int process_nr, int process_cnt) : id(process_nr),
     print_msg(id, filename);
     msg_out.open(filename, ios::out | ios::binary);
 
-    fail_out.write((char *)id, sizeof(id));
+    fail_out.write(reinterpret_cast<const char *>(&id), sizeof(id));
     fail_out.write((char *)&fail_v[0], sizeof(fail_v));
     fail_out.close();
 
@@ -279,7 +279,7 @@ Pet_kea::Pet_kea(int process_nr, int process_cnt, int fildes[][2], struct msg_t 
     msg_out.open(filename, ios::out | ios::binary);
     print_fail(id, filename);
     ifstream fail_in(filename, ios::in | ios::binary);
-    fail_in.read((char *)id, sizeof(id));
+    fail_in.read((char *)&id, sizeof(id));
     fail_in.read((char *)&fail_v[0], sizeof(fail_v)); // TODO: write failurelog recovery
     fail_in.close();
 

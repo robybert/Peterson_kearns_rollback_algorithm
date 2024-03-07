@@ -7,11 +7,11 @@ pet: pet-kea.o
 
 output: main.o process.o pet-kea.o
 	$(CC) $(CFLAGS) -o output main.o process.o pet-kea.o
-main.o: main.cpp process.h
+main.o: main.cpp process.hpp
 	$(CC) $(CFLAGS) -c  main.cpp 
 
-process.o: process.cpp process.h
-	$(CC) $(CFLAGS) -c  process.cpp process.h
+process.o: process.cpp process.hpp
+	$(CC) $(CFLAGS) -c  process.cpp process.hpp
 pet-kea.o: pet-kea.cpp pet-kea.hpp
 	$(CC) $(CFLAGS) -c pet-kea.cpp pet-kea.hpp
 

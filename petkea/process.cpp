@@ -173,7 +173,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
             if (buffer.msg_type == MSG)
             {
                 msg_cnt++;
-                // cout << process_nr << " " << buffer.contents.ptp_msg.msg_buf << "   time_v: " << buffer.time_v[0] << "-" << buffer.time_v[1] << endl;
+                cout << process_nr << " " << buffer.contents.ptp_msg.msg_buf << "   time_v: " << buffer.time_v[0] << "-" << buffer.time_v[1] << endl;
                 continue;
             }
             else if (buffer.msg_type == ERR)
