@@ -5,7 +5,7 @@
 #include <thread>
 #include <unistd.h>
 #include <time.h>
-#include "process.h"
+#include "process.hpp"
 
 const int PARENT_SEED = 463523;
 using namespace std;
@@ -31,7 +31,7 @@ int main(int argc, char const *argv[])
         cout << "parent created child " << i << " with c_pid " << c_pid[i] << endl;
     }
 
-    int to_restart = 0;
+    int to_restart = 1;
 
     while (1)
     {

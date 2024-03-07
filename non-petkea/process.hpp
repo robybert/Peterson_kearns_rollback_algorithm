@@ -2,6 +2,9 @@
 #define _PROCESS_H_
 
 #include <unistd.h>
+#include <string>
+
+using namespace std;
 
 typedef enum message_type
 {
@@ -11,20 +14,19 @@ typedef enum message_type
 
 struct ptp_msg
 {
-    int sending_process_nr;
-    char msg_buf[50];
+    char msg_buf[64];
 };
 
 struct ptp_err
 {
     pid_t pid;
-    int sending_process_nr;
     int fildes[2];
 };
 
 struct msg_t
 {
     message_type msg_type;
+    int sending_process_nr;
     union contents
     {
         struct ptp_msg ptp_msg;

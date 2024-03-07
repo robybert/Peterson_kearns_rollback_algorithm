@@ -1,6 +1,12 @@
 {
     "cmake.configureOnOpen": false,
     "files.associations": {
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "cstddef": "cpp",
+        "bitset": "cpp",
+        "algorithm": "cpp",
+        "format": "cpp"
     }
 }
