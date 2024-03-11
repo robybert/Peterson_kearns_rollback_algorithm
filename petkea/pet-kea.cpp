@@ -12,12 +12,7 @@ void print_msg(int process_nr, char fail_v_filename[32])
     sprintf(fail_v_filename, "msg_process_%d.dat", process_nr);
 }
 
-void Pet_kea::deserialize_ctrl(char *data, struct ctrl_msg_t *msg)
-{
-    // TODO: deserialize ctrl msg
-}
-
-void Pet_kea::serialize(struct msg_t *msg, char *data)
+void Pet_kea::State::serialize_ctrl(struct ctrl_msg_t *msg, char *data)
 {
     int *q = (int *)data;
     *q = msg->msg_type;
@@ -25,61 +20,29 @@ void Pet_kea::serialize(struct msg_t *msg, char *data)
     *q = msg->sending_process_nr;
     q++;
 
-    if (msg->msg_type == MSG)
+    *q = msg->log_entry.id;
+    q++;
+    *q = msg->log_entry.fail_nr;
+    q++;
+    *q = msg->log_entry.res_time;
+    q++;
+
+    *q = msg->recieved_cnt;
+    q++;
+
+    for (int i = 0; i < msg->recieved_cnt; i++)
     {
-        for (int i = 0; i < (int)time_v.size(); i++)
+        *q = msg->recieved->first;
+        q++;
+        for (int j = 0; j < (int)fail_v.size(); j++)
         {
-            *q = msg->time_v[i];
+            *q = msg->recieved->second[i];
             q++;
-        }
-
-        for (int i = 0; i < (int)fail_v.size(); i++)
-        {
-            *q = msg->fail_v[i];
-            q++;
-        }
-
-        char *p = (char *)q;
-        for (int i = 0; i < 64; i++)
-        {
-            *p = msg->contents.ptp_msg.msg_buf[i];
-            p++;
-        }
-    }
-    else if (msg->msg_type == ERR)
-    {
-        // TODO: write serialization for errmsg
-        *q = msg->contents.ptp_err.pid;
-        q++;
-        *q = msg->contents.ptp_err.fildes[0];
-        q++;
-        *q = msg->contents.ptp_err.fildes[1];
-        q++;
-
-        // serialize ctrl_msg_t
-        *q = msg->contents.ptp_err.msg->log_entry.id;
-        q++;
-        *q = msg->contents.ptp_err.msg->log_entry.fail_nr;
-        q++;
-        *q = msg->contents.ptp_err.msg->log_entry.res_time;
-        q++;
-
-        *q = msg->contents.ptp_err.msg->recieved_cnt;
-        q++;
-
-        for (int i = 0; i < msg->contents.ptp_err.msg->recieved_cnt; i++)
-        {
-            *q = msg->contents.ptp_err.msg->recieved->first;
-            q++;
-            for (int j = 0; j < (int)fail_v.size(); j++)
-            {
-                *q = msg->contents.ptp_err.msg->recieved->second[i];
-                q++;
-            }
         }
     }
 }
-void Pet_kea::deserialize(char *data, struct msg_t *msg)
+
+void Pet_kea::State::deserialize_ctrl(char *data, struct ctrl_msg_t *msg)
 {
     int *q = (int *)data;
     msg->msg_type = (msg_type)*q;
@@ -87,61 +50,143 @@ void Pet_kea::deserialize(char *data, struct msg_t *msg)
     msg->sending_process_nr = *q;
     q++;
 
-    if (msg->msg_type == MSG)
+    msg->log_entry.id = *q;
+    q++;
+    msg->log_entry.fail_nr = *q;
+    q++;
+    msg->log_entry.res_time = *q;
+    q++;
+
+    msg->recieved_cnt = *q;
+    q++;
+
+    msg->recieved = (pair<int, vector<int>> *)malloc(sizeof(pair<int, vector<int>>) * msg->recieved_cnt);
+
+    for (int i = 0; i < msg->recieved_cnt; i++)
     {
-        for (int i = 0; i < (int)time_v.size(); i++)
+        msg->recieved->first = *q;
+        q++;
+        for (int j = 0; j < (int)fail_v.size(); j++)
         {
-            msg->time_v[i] = *q; //////
+            msg->recieved->second[j] = *q;
             q++;
-        }
-
-        for (int i = 0; i < (int)fail_v.size(); i++)
-        {
-            msg->fail_v[i] = *q;
-            q++;
-        }
-        char *p = (char *)q;
-        for (int i = 0; i < 64; i++)
-        {
-            msg->contents.ptp_msg.msg_buf[i] = *p;
-            p++;
-        }
-    }
-    else
-    {
-        // TODO: write deserialization for errmsg
-        msg->contents.ptp_err.pid = *q;
-        q++;
-        msg->contents.ptp_err.fildes[0] = *q;
-        q++;
-        msg->contents.ptp_err.fildes[1] = *q;
-        q++;
-
-        // serialize ctrl_msg_t
-        msg->contents.ptp_err.msg->log_entry.id = *q;
-        q++;
-        msg->contents.ptp_err.msg->log_entry.fail_nr = *q;
-        q++;
-        msg->contents.ptp_err.msg->log_entry.res_time = *q;
-        q++;
-
-        msg->contents.ptp_err.msg->recieved_cnt = *q;
-        q++;
-
-        for (int i = 0; i < msg->contents.ptp_err.msg->recieved_cnt; i++)
-        {
-            msg->contents.ptp_err.msg->recieved->first = *q;
-            q++;
-            for (int j = 0; j < (int)fail_v.size(); j++)
-            {
-                msg->contents.ptp_err.msg->recieved->second[i] = *q;
-                q++;
-            }
         }
     }
 }
 
-void Pet_kea::send_ctrl(int fildes[][2], struct msg_t *msg)
+void Pet_kea::State::serialize(struct msg_t *msg, char *data)
+{
+    int *q = (int *)data;
+    *q = msg->msg_type;
+    q++;
+    *q = msg->sending_process_nr;
+    q++;
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        *q = msg->time_v[i];
+        q++;
+    }
+
+    for (int i = 0; i < (int)fail_v.size(); i++)
+    {
+        *q = msg->fail_v[i];
+        q++;
+    }
+
+    *q = msg->msg_size;
+    q++;
+
+    char *p = (char *)q;
+    for (int i = 0; i < msg->msg_size; i++)
+    {
+        *p = msg->msg_buf[i];
+        p++;
+    }
+
+    // else if (msg->msg_type == CTRL)
+    // {
+    //     // TODO: write serialization for errmsg
+    //     *q = msg->contents.ptp_err.pid;
+    //     q++;
+    //     *q = msg->contents.ptp_err.fildes[0];
+    //     q++;
+    //     *q = msg->contents.ptp_err.fildes[1];
+    //     q++;
+
+    //     // serialize ctrl_msg_t
+    //     *q = msg->contents.ptp_err.msg->log_entry.id;
+    //     q++;
+    //     *q = msg->contents.ptp_err.msg->log_entry.fail_nr;
+    //     q++;
+    //     *q = msg->contents.ptp_err.msg->log_entry.res_time;
+    //     q++;
+
+    //     *q = msg->contents.ptp_err.msg->recieved_cnt;
+    //     q++;
+
+    //     for (int i = 0; i < msg->contents.ptp_err.msg->recieved_cnt; i++)
+    //     {
+    //
+    //     }
+    // }
+}
+void Pet_kea::State::deserialize(char *data, struct msg_t *msg)
+{
+    int *q = (int *)data;
+    msg->msg_type = (msg_type)*q;
+    q++;
+    msg->sending_process_nr = *q;
+    q++;
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        msg->time_v[i] = *q; //////
+        q++;
+    }
+
+    for (int i = 0; i < (int)fail_v.size(); i++)
+    {
+        msg->fail_v[i] = *q;
+        q++;
+    }
+
+    msg->msg_size = *q;
+    q++;
+
+    char *p = (char *)q;
+    msg->msg_buf = (char *)malloc(msg->msg_size);
+    for (int i = 0; i < msg->msg_size; i++)
+    {
+        msg->msg_buf[i] = *p;
+        p++;
+    }
+    // else
+    // {
+    //     // TODO: write deserialization for errmsg
+    //     msg->contents.ptp_err.pid = *q;
+    //     q++;
+    //     msg->contents.ptp_err.fildes[0] = *q;
+    //     q++;
+    //     msg->contents.ptp_err.fildes[1] = *q;
+    //     q++;
+
+    //     // serialize ctrl_msg_t
+    //     msg->contents.ptp_err.msg->log_entry.id = *q;
+    //     q++;
+    //     msg->contents.ptp_err.msg->log_entry.fail_nr = *q;
+    //     q++;
+    //     msg->contents.ptp_err.msg->log_entry.res_time = *q;
+    //     q++;
+
+    //     msg->contents.ptp_err.msg->recieved_cnt = *q;
+    //     q++;
+
+    //
+    // }
+}
+
+void Pet_kea::State::send_ctrl(int fildes[][2])
 {
 
     pair<int, vector<int>> *recvd_pair[time_v.size()]; // TODO: malloc
@@ -158,21 +203,21 @@ void Pet_kea::send_ctrl(int fildes[][2], struct msg_t *msg)
 
     for (int i = 0; i < (int)time_v.size(); i++)
     {
-        // TODO: prepare and send the ctrl messages
+        // prepare and send the ctrl messages
         if (i == id)
             continue;
-        struct ctrl_msg_t *ctrl_msg = (ctrl_msg_t *)malloc(sizeof(ctrl_msg_t));
-        ctrl_msg->log_entry = fail_log;
-        ctrl_msg->recieved_cnt = cnt[i];
-        ctrl_msg->recieved = recvd_pair[i];
-        msg->msg_type = ERR;
-        msg->sending_process_nr = id;
-        msg->contents.ptp_err.msg = ctrl_msg;
-        // TODO: send the control message (serialize)
-        char *data = (char *)malloc(sizeof(msg_t) + sizeof(recvd_pair[i])); // TODO: fix size
-        serialize(msg, data);
+        struct ctrl_msg_t msg; // = (ctrl_msg_t *)malloc(sizeof(ctrl_msg_t));
+        msg.msg_type = CTRL;
+        msg.sending_process_nr = id;
+        msg.log_entry = fail_log;
+        msg.recieved_cnt = cnt[i];
+        msg.recieved = recvd_pair[i];
+        // send the control message (serialize)
+        size_t size = sizeof(ctrl_msg_t) + (sizeof(pair<int, vector<int>>) * msg.recieved_cnt);
+        char *data = (char *)malloc(size); // TODO: fix size???
+        serialize_ctrl(&msg, data);
 
-        int ret = write(fildes[i][1], data, sizeof(data));
+        int ret = write(fildes[i][1], data, size);
         if (ret < 0)
         {
             // TODO: do error checking
@@ -180,11 +225,11 @@ void Pet_kea::send_ctrl(int fildes[][2], struct msg_t *msg)
     }
 }
 
-void Pet_kea::recv_ctrl()
+void Pet_kea::State::recv_ctrl()
 {
 }
 
-int Pet_kea::store_msg(struct msg_t *msg, bool recipient)
+int Pet_kea::State::store_msg(struct msg_t *msg, bool recipient)
 {
     // store the message
     if (msg_cnt >= MAX_LOG)
@@ -194,9 +239,11 @@ int Pet_kea::store_msg(struct msg_t *msg, bool recipient)
         return -1;
     }
 
-    sprintf(msg_log[msg_cnt].msg_buf, msg->contents.ptp_msg.msg_buf);
+    msg_log[msg_cnt].msg_size = msg->msg_size;
     msg_log[msg_cnt].recipient = recipient;
     msg_log[msg_cnt].process_id = msg->sending_process_nr; // TODO: look at the sending and recving process nr in thesis
+    msg_log[msg_cnt].msg_buf = (char *)malloc(msg->msg_size);
+    memcpy(msg_log[msg_cnt].msg_buf, msg->msg_buf, msg->msg_size);
     msg_log[msg_cnt].time_v = time_v;
     msg_log[msg_cnt].fail_v = fail_v;
     msg_cnt++;
@@ -207,11 +254,11 @@ int Pet_kea::store_msg(struct msg_t *msg, bool recipient)
     return 0;
 }
 
-Pet_kea::Pet_kea(int process_nr, int process_cnt) : id(process_nr),
-                                                    time_v(process_cnt, 0),
-                                                    fail_v(process_cnt, 0),
-                                                    msg_cnt(0),
-                                                    last_checkpoint(0)
+Pet_kea::State::State(int process_nr, int process_cnt) : id(process_nr),
+                                                         time_v(process_cnt, 0),
+                                                         fail_v(process_cnt, 0),
+                                                         msg_cnt(0),
+                                                         last_checkpoint(0)
 {
     char filename[32];
     print_fail(id, filename);
@@ -226,18 +273,31 @@ Pet_kea::Pet_kea(int process_nr, int process_cnt) : id(process_nr),
     msg_log = (msg_log_t *)malloc(MAX_LOG * sizeof(msg_log_t));
 }
 
-Pet_kea::Pet_kea(int process_nr, int process_cnt, int fildes[][2], struct msg_t *msg) : id(process_nr),
-                                                                                        time_v(process_cnt, 0),
-                                                                                        fail_v(process_cnt, 0),
-                                                                                        msg_cnt(0),
-                                                                                        last_checkpoint(0)
+Pet_kea::State::State(int process_nr, int process_cnt, int fildes[][2]) : id(process_nr),
+                                                                          time_v(process_cnt, 0),
+                                                                          fail_v(process_cnt, 0),
+                                                                          msg_cnt(0),
+                                                                          last_checkpoint(0)
 {
     char filename[32];
     print_msg(id, filename);
     ifstream msg_in(filename, ios::in | ios::binary);
-    msg_in.read((char *)&id, sizeof(id));
-    msg_in.read((char *)&msg_cnt, sizeof(msg_cnt));
-    msg_in.read((char *)&last_checkpoint, sizeof(last_checkpoint));
+
+    int *update = (int *)malloc(sizeof(int) * 3);
+    msg_in.read((char *)update, sizeof(int) * 3);
+
+    id = *update;
+    update++;
+    msg_cnt = *update;
+    update++;
+    last_checkpoint = *update;
+    update--;
+    update--;
+    free(update);
+
+    // msg_in.read((char *)&id, sizeof(id));
+    // msg_in.read((char *)&msg_cnt, sizeof(msg_cnt));
+    // msg_in.read((char *)&last_checkpoint, sizeof(last_checkpoint));
     // time_v.resize(process_cnt);
     size_t size = time_v.size();
     msg_in.read((char *)&time_v[0], sizeof(time_v));
@@ -262,7 +322,7 @@ Pet_kea::Pet_kea(int process_nr, int process_cnt, int fildes[][2], struct msg_t 
         msg_in.read((char *)&msg_log[i].fail_v[0], sizeof(msg_log->fail_v));
     }
 
-    // TODO: detect lost messages if crash happened during checkpoint
+    // detect lost messages if crash happened during checkpoint
     if (msg_cnt != to_read)
     {
         msg_cnt = to_read;
@@ -290,23 +350,35 @@ Pet_kea::Pet_kea(int process_nr, int process_cnt, int fildes[][2], struct msg_t 
     fail_out.write((char *)&entry, sizeof(fail_log_t));
     fail_out.close();
 
-    send_ctrl(fildes, msg);
+    send_ctrl(fildes);
 }
 
-Pet_kea::~Pet_kea()
+Pet_kea::State::~State()
 {
     free(msg_log);
     msg_out.close();
 }
 
-int Pet_kea::checkpoint()
+int Pet_kea::State::checkpoint()
 {
     // write state and time vector at the start of the file
     // TODO: write this in one go
+
+    int *update = (int *)malloc(sizeof(int) * 3);
+    *update = id;
+    update++;
+    *update = msg_cnt;
+    update++;
+    *update = last_checkpoint;
+    update--;
+    update--;
+
     msg_out.seekp(0, ios::beg);
-    msg_out.write(reinterpret_cast<const char *>(&id), sizeof(id));
-    msg_out.write(reinterpret_cast<const char *>(&msg_cnt), sizeof(msg_cnt));
-    msg_out.write(reinterpret_cast<const char *>(&last_checkpoint), sizeof(last_checkpoint));
+    msg_out.write((char *)update, sizeof(int) * 3);
+    free(update);
+    // msg_out.write(reinterpret_cast<const char *>(&id), sizeof(id));
+    // msg_out.write(reinterpret_cast<const char *>(&msg_cnt), sizeof(msg_cnt));
+    // msg_out.write(reinterpret_cast<const char *>(&last_checkpoint), sizeof(last_checkpoint));
 
     msg_out.write((char *)&time_v[0], sizeof(time_v));
 
@@ -314,7 +386,7 @@ int Pet_kea::checkpoint()
     msg_out.seekp(0, ios::end);
     for (; last_checkpoint < msg_cnt; last_checkpoint++)
     {
-        msg_out.write((char *)&msg_log[last_checkpoint], sizeof(msg_log->msg_buf) + sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
+        msg_out.write((char *)&msg_log[last_checkpoint], sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
         msg_out.write((char *)&msg_log[last_checkpoint].time_v[0], sizeof(msg_log->time_v));
         msg_out.write((char *)&msg_log[last_checkpoint].fail_v[0], sizeof(msg_log->fail_v));
     }
@@ -324,7 +396,7 @@ int Pet_kea::checkpoint()
     return 0;
 }
 
-int Pet_kea::send_msg(char *input, int fildes[2])
+int Pet_kea::State::send_msg(char *input, int fildes[2], int size)
 {
     // inc T^i
     time_v[id]++;
@@ -332,18 +404,19 @@ int Pet_kea::send_msg(char *input, int fildes[2])
     struct msg_t msg(time_v.size());
 
     msg.msg_type = MSG;
-    sprintf(msg.contents.ptp_msg.msg_buf, input);
-    msg.time_v = time_v;
     msg.sending_process_nr = id;
+    msg.time_v = time_v;
     msg.fail_v = fail_v;
+    msg.msg_size = size;
+    msg.msg_buf = input;
 
-    char data[sizeof(msg_t)];
+    char data[sizeof(msg_t) + size];
     serialize(&msg, data);
 
     // send the message
     // cout << id << " vector sent = " << msg.time_v[0] << "-" << msg.time_v[1] << endl;
 
-    if (write(fildes[1], data, sizeof(msg_t)) < 0)
+    if (write(fildes[1], data, sizeof(msg_t) + size) < 0)
     {
         // handle error
     }
@@ -353,18 +426,19 @@ int Pet_kea::send_msg(char *input, int fildes[2])
     return 0;
 }
 
-int Pet_kea::recv_msg(int fildes[2], struct msg_t *ret_buf)
+int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 {
     // read message
     int ret;
-    char data[sizeof(msg_t)];
-    ret = read(fildes[0], data, sizeof(msg_t));
+    char *data = (char *)malloc(sizeof(msg_t) + size); // TODO: check size
+    ret = read(fildes[0], data, sizeof(msg_t) + size); // TODO: check size
     // do err checking
     if (ret < 0)
     {
     }
 
-    deserialize(data, ret_buf);
+    struct msg_t msg(time_v.size());
+    deserialize(data, &msg);
     // cout << id << " vector recieved =" << ret_buf->time_v[0] << "-" << ret_buf->time_v[1] << endl;
 
     // check if it is an errmsg
@@ -375,15 +449,18 @@ int Pet_kea::recv_msg(int fildes[2], struct msg_t *ret_buf)
     {
         if (i == id)
             continue;
-        time_v.at(i) = max(ret_buf->time_v[i], time_v[i]);
+        time_v.at(i) = max(msg.time_v[i], time_v[i]);
     }
 
-    store_msg(ret_buf, true);
+    store_msg(&msg, true);
+
+    // output = (char *)malloc(msg.msg_size);
+    memcpy(output, msg.msg_buf, msg.msg_size);
 
     return 0;
 }
 
-int Pet_kea::recovery()
+int Pet_kea::State::recovery()
 {
     return 0;
 }
