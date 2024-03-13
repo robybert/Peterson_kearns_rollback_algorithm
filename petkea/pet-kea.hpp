@@ -18,11 +18,15 @@ const int SAVE_CNT = 5;
 
 namespace Pet_kea
 {
+    // int SER_SIZE_CTRL_MSG_T(int i) = 6 * sizeof(int);
+    //  const SER_SIZE_MSG_T = ;
+    inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); };
 
     typedef enum message_type
     {
         MSG,
-        CTRL
+        CTRL,
+        VOID
     } msg_type;
 
     struct fail_log_t
@@ -84,18 +88,20 @@ namespace Pet_kea
         void deserialize_ctrl(char *data, struct ctrl_msg_t *msg);
         void serialize(struct msg_t *msg, char *data);
         void deserialize(char *data, struct msg_t *msg);
-        void send_ctrl(int fildes[][2]);
-        void recv_ctrl();
+
+        void recv_ctrl(char *data);
         int store_msg(struct msg_t *msg, bool recipient);
 
     public:
-        State(int process_nr, int process_cnt);
+        State(int process_nr, int process_cnt, bool restart);
         State(int process_nr, int process_cnt, int fildes[][2]);
         ~State();
         int checkpoint();
+        int send_void(char *input, int fildes[2], int size);
         int send_msg(char *input, int fildes[2], int size);
         int recv_msg(int fildes[2], char *output, int size);
         int recovery();
+        void send_ctrl(int fildes[][2]);
     };
 }
 

@@ -60,49 +60,55 @@ pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2])
     return new_c_pid;
 }
 
-// int send_err_msg(int process_nr, msg_t buffer, int fildes[CHILDREN][2])
-// {
-//     int ret;
-//     buffer.msg_type = CTRL;
-//     cout << "sending CTRL with fd = " << fildes[process_nr][0] << " " << fildes[process_nr][1] << endl;
-//     buffer.contents.ptp_err.fildes[0] = fildes[process_nr][0];
-//     buffer.contents.ptp_err.fildes[1] = fildes[process_nr][1];
-//     buffer.contents.ptp_err.sending_process_nr = process_nr;
-//     buffer.contents.ptp_err.pid = getpid();
-//     for (int i = 0; i < CHILDREN; i++)
-//     {
-//         if (i == process_nr)
-//             continue;
-//         ret = write(fildes[i][1], &buffer, BSIZE);
-//         if (ret < 0)
-//         {
-//             perror("failure to write CTRL msg");
-//             return -1;
-//         }
-//     }
-//     return 0;
-// }
-
-int recv_err_msg(struct msg_t buffer, int fildes[CHILDREN][2])
+int send_err_msg(int process_nr, Pet_kea::State *state, int fildes[CHILDREN][2])
 {
+    int ret;
+    struct msg_t msg;
+    msg.type = ERR;
+    msg.sending_process_nr = process_nr;
+    cout << "sending ERR with fd = " << fildes[process_nr][0] << " " << fildes[process_nr][1] << endl;
+    msg.ptp_err.fildes[0] = fildes[process_nr][0];
+    msg.ptp_err.fildes[1] = fildes[process_nr][1];
+    msg.ptp_err.pid = getpid();
 
-    close(fildes[buffer.sending_process_nr][0]);
-    close(fildes[buffer.sending_process_nr][1]);
-    int pidfd = syscall(SYS_pidfd_open, buffer.ptp_err.pid, 0);
+    char input[SER_ERR_MSG_SIZE];
+    serialize(&msg, input);
+
+    for (int i = 0; i < CHILDREN; i++)
+    {
+        if (i == process_nr)
+            continue;
+        ret = state->send_void(input, fildes[i], SER_ERR_MSG_SIZE);
+        if (ret < 0)
+        {
+            perror("failure to write ERR msg");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int recv_err_msg(struct msg_t *buffer, int fildes[CHILDREN][2])
+{
+    cout << "recieving ERR with fd = " << fildes[buffer->sending_process_nr][0] << " " << fildes[buffer->sending_process_nr][1] << " with pid: " << buffer->ptp_err.pid << endl;
+    close(fildes[buffer->sending_process_nr][0]);
+    close(fildes[buffer->sending_process_nr][1]);
+    int pidfd = syscall(SYS_pidfd_open, buffer->ptp_err.pid, 0);
+    // cout << "recieving ERR with fd = " << fildes[buffer->sending_process_nr][0] << " " << fildes[buffer->sending_process_nr][1] << " with pidfd: " << pidfd << endl;
     if (pidfd == -1)
     {
         perror("failure to generate pidfd");
         return -1;
     }
-    fildes[buffer.sending_process_nr][0] = syscall(SYS_pidfd_getfd, pidfd, buffer.ptp_err.fildes[0], 0);
-    if (fildes[buffer.sending_process_nr][0] == -1)
+    fildes[buffer->sending_process_nr][0] = syscall(SYS_pidfd_getfd, pidfd, buffer->ptp_err.fildes[0], 0);
+    if (fildes[buffer->sending_process_nr][0] == -1)
     {
         perror("failure to recieve fd 0 from process");
         return -1;
     }
 
-    fildes[buffer.sending_process_nr][1] = syscall(SYS_pidfd_getfd, pidfd, buffer.ptp_err.fildes[1], 0);
-    if (fildes[buffer.sending_process_nr][1] == -1)
+    fildes[buffer->sending_process_nr][1] = syscall(SYS_pidfd_getfd, pidfd, buffer->ptp_err.fildes[1], 0);
+    if (fildes[buffer->sending_process_nr][1] == -1)
     {
         perror("failure to recieve fd 1 from process");
         return -1;
@@ -112,13 +118,13 @@ int recv_err_msg(struct msg_t buffer, int fildes[CHILDREN][2])
 
 void serialize(struct msg_t *msg, char *data)
 {
+    int *q = (int *)data;
+    *q = msg->type;
+    q++;
+    *q = msg->sending_process_nr;
+    q++;
     if (msg->type == MSG)
     {
-        int *q = (int *)data;
-        *q = msg->type;
-        q++;
-        *q = msg->sending_process_nr;
-        q++;
         char *p = (char *)q;
         for (int i = 0; i < (int)sizeof(msg->ptp_msg.msg); i++)
         {
@@ -128,7 +134,12 @@ void serialize(struct msg_t *msg, char *data)
     }
     else
     {
-        // TODO: serialize err msg
+        *q = msg->ptp_err.pid;
+        q++;
+        *q = msg->ptp_err.fildes[0];
+        q++;
+        *q = msg->ptp_err.fildes[1];
+        q++;
     }
 }
 
@@ -137,11 +148,10 @@ void deserialize(char *data, struct msg_t *msg)
     int *q = (int *)data;
     msg->type = (message_type)*q;
     q++;
+    msg->sending_process_nr = *q;
+    q++;
     if (msg->type == MSG)
     {
-
-        msg->sending_process_nr = *q;
-        q++;
         char *p = (char *)q;
         for (int i = 0; i < (int)sizeof(msg->ptp_msg.msg); i++)
         {
@@ -152,6 +162,12 @@ void deserialize(char *data, struct msg_t *msg)
     else
     {
         // TODO: serialize err msg
+        msg->ptp_err.pid = (pid_t)*q;
+        q++;
+        msg->ptp_err.fildes[0] = *q;
+        q++;
+        msg->ptp_err.fildes[1] = *q;
+        q++;
     }
 }
 
@@ -176,7 +192,7 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
     deserialize(output, msg);
     if (ret < 0)
     {
-        perror("write to pipe");
+        perror("read from pipe");
         return -1;
     }
     return 0;
@@ -189,7 +205,6 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     fd_set current_fd, ready_fd;
     struct timeval tv;
 
-    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN);
     struct msg_t buffer;
 
     int ret, dest_process_nr, msg_cnt = 0, msg_nr = 0;
@@ -204,13 +219,17 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     tv.tv_sec = 0;
     tv.tv_usec = 200000;
 
+    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, restart);
+
     if (restart)
     {
-        ret = state.recovery(); // TODO: fix recovery
+        ret = send_err_msg(process_nr, &state, fildes);
         if (ret == -1)
         {
+
             exit(EXIT_FAILURE);
         }
+        state.send_ctrl(fildes);
     }
     // close(fildes[process_nr][1]);       //close writing to your read pipe the pipe needs to stay open until the other processes have retrieved the FD
 
@@ -240,8 +259,8 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
             }
             else if (buffer.type == ERR)
             {
-                cout << process_nr << " CTRL recieved from " << buffer.sending_process_nr << endl;
-                ret = recv_err_msg(buffer, fildes);
+                cout << process_nr << " ERR recieved from " << buffer.sending_process_nr << endl;
+                ret = recv_err_msg(&buffer, fildes);
                 if (ret != -1)
                     is_busy[buffer.sending_process_nr] = false;
                 // TODO: send confirmation

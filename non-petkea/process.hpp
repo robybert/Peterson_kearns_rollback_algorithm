@@ -36,7 +36,11 @@ struct msg_t
 
 const int BSIZE = sizeof(msg_t);
 const int SEED = 555432;
-const int CHILDREN = 3;
+const int CHILDREN = 2;
+
+void serialize(struct msg_t *msg, char *data);
+
+void deserialize(char *data, struct msg_t *msg);
 
 /**
  * @brief: Makes pipe and handles errors
@@ -71,7 +75,7 @@ pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2]);
  * @param fildes: The FD of the pipes
  * @return: Returns 0 for succes, -1 for failure
  */
-int send_err_msg(int process_nr, msg_t buffer, int fildes[CHILDREN][2]);
+int send_err_msg(int process_nr, msg_t *buffer, int fildes[CHILDREN][2]);
 
 /**
  * @brief: Recieves the ERR message to close and re-establish the FD
@@ -79,7 +83,7 @@ int send_err_msg(int process_nr, msg_t buffer, int fildes[CHILDREN][2]);
  * @param fildes: The FD of the pipes
  * @return: Returns 0 for succes, -1 for failure
  */
-int recv_err_msg(struct msg_t buffer, int fildes[CHILDREN][2]);
+int recv_err_msg(struct msg_t *buffer, int fildes[CHILDREN][2]);
 
 /**
  * @brief: Sends a message

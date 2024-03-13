@@ -2,9 +2,10 @@
 #define _PROCESS_H_
 
 #include <unistd.h>
-const int CHILDREN = 3;
+const int CHILDREN = 2;
 #include "pet-kea.hpp"
 
+const int SER_ERR_MSG_SIZE = sizeof(int) * 5;
 const int SEED = 555432;
 
 typedef enum message_type
@@ -71,7 +72,7 @@ void deserialize(char *data, struct msg_t *msg);
  * @param fildes: The FD of the pipes
  * @return: Returns 0 for succes, -1 for failure
  */
-int send_err_msg(int process_nr, msg_t buffer, int fildes[CHILDREN][2]);
+int send_err_msg(int process_nr, Pet_kea::State *state, int fildes[CHILDREN][2]);
 
 /**
  * @brief: Recieves the CTRL message to close and re-establish the FD
@@ -79,7 +80,7 @@ int send_err_msg(int process_nr, msg_t buffer, int fildes[CHILDREN][2]);
  * @param fildes: The FD of the pipes
  * @return: Returns 0 for succes, -1 for failure
  */
-int recv_err_msg(struct msg_t buffer, int fildes[CHILDREN][2]);
+int recv_err_msg(struct msg_t *buffer, int fildes[CHILDREN][2]);
 
 /**
  * @brief: Sends a message
