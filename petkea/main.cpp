@@ -34,10 +34,10 @@ int main(int argc, char const *argv[])
     int to_restart = 1;
 
     // rng for time to wait
-    this_thread::sleep_for(chrono::seconds(5));
+    this_thread::sleep_for(chrono::seconds(8));
 
     // restart the selected process
-    c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes);
+    // c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes);
 
     while (1)
     {

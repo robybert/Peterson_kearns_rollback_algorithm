@@ -33,11 +33,11 @@ void Pet_kea::State::serialize_ctrl(struct ctrl_msg_t *msg, char *data)
 
     for (int i = 0; i < msg->recieved_cnt; i++)
     {
-        *q = msg->recieved[i].first;
+        *q = msg->recieved[i].Tj;
         q++;
         for (int j = 0; j < (int)fail_v.size(); j++)
         {
-            *q = msg->recieved[i].second[j];
+            *q = msg->recieved[i].fail_v[j];
             q++;
         }
     }
@@ -62,18 +62,20 @@ void Pet_kea::State::deserialize_ctrl(char *data, struct ctrl_msg_t *msg)
     msg->log_entry.res_time = *q;
     q++;
 
-    msg->recieved = (pair<int, vector<int>> *)malloc(sizeof(pair<int, vector<int>>) * msg->recieved_cnt);
-
+    struct int_vec_pair *recieved = (struct int_vec_pair *)malloc(msg->recieved_cnt * sizeof(struct int_vec_pair));
+    vector<int> temp_v(fail_v.size(), 0);
     for (int i = 0; i < msg->recieved_cnt; i++)
     {
-        msg->recieved[i].first = *q;
+        recieved[i].Tj = *q;
         q++;
         for (int j = 0; j < (int)fail_v.size(); j++)
         {
-            msg->recieved[i].second[j] = *q;
+            temp_v[j] = *q;
             q++;
         }
+        recieved[i].fail_v = temp_v;
     }
+    msg->recieved = recieved;
 }
 
 void Pet_kea::State::serialize(struct msg_t *msg, char *data)
@@ -147,19 +149,83 @@ void Pet_kea::State::deserialize(char *data, struct msg_t *msg)
     // }
 }
 
+void Pet_kea::State::serialize_log(struct msg_log_t *log, char *data)
+{
+    int *q = (int *)data;
+    *q = log->msg_size;
+    q++;
+    *q = log->recipient;
+    q++;
+    *q = log->process_id;
+    q++;
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        *q = log->time_v[i];
+        q++;
+    }
+    for (int i = 0; i < (int)fail_v.size(); i++)
+    {
+        *q = log->fail_v[i];
+        q++;
+    }
+    memcpy(q, log->msg_buf, log->msg_size);
+}
+int Pet_kea::State::deserialize_log(char *data, struct msg_log_t *log)
+{
+    int *q = (int *)data;
+    log->msg_size = *q;
+    q++;
+    log->recipient = *q;
+    q++;
+    log->process_id = *q;
+    q++;
+    log->time_v = vector<int>(time_v.size(), 0);
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        log->time_v[i] = *q;
+        q++;
+    }
+    log->fail_v = vector<int>(fail_v.size(), 0);
+    for (int i = 0; i < (int)fail_v.size(); i++)
+    {
+        log->fail_v[i] = *q;
+        q++;
+    }
+    log->msg_buf = (char *)malloc(log->msg_size);
+    memcpy(log->msg_buf, q, log->msg_size);
+
+    return (q - (int *)data) * sizeof(int) + log->msg_size;
+}
+
 void Pet_kea::State::send_ctrl(int fildes[][2])
 {
-
-    pair<int, vector<int>> *recvd_pair[time_v.size()]; // TODO: malloc
+    struct int_vec_pair **recvd_pair = (struct int_vec_pair **)malloc(time_v.size() * sizeof(struct int_vec_pair *));
+    // pair<int, vector<int>> *recvd_pair[time_v.size()]; // TODO: malloc
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        recvd_pair[i] = (struct int_vec_pair *)malloc(INT_VEC_PAIR_DELTA * sizeof(struct int_vec_pair));
+    }
     vector<int> cnt(time_v.size(), 0);
     struct fail_log_t fail_log = {id, fail_v[id], time_v[id]};
 
     for (int i = 0; i < msg_cnt; i++)
     {
         // TODO: maybe a check here if processid in msg_t is changed
-        recvd_pair[msg_log[i].process_id][cnt[msg_log[i].process_id]].first = msg_log[i].time_v[msg_log[i].process_id];
-        recvd_pair[msg_log[i].process_id][cnt[msg_log[i].process_id]].second = msg_log[i].fail_v;
+        recvd_pair[msg_log[i].process_id][cnt[msg_log[i].process_id]].Tj = msg_log[i].time_v[msg_log[i].process_id];
+        // recvd_pair[msg_log[i].process_id][cnt[msg_log[i].process_id]].fail_v = vector<int>(2, 0);
+        recvd_pair[msg_log[i].process_id][cnt[msg_log[i].process_id]].fail_v = msg_log[i].fail_v;
         cnt[msg_log[i].process_id]++;
+        if (cnt[msg_log[i].process_id] % INT_VEC_PAIR_DELTA == 0)
+        {
+            struct int_vec_pair *new_pair = (struct int_vec_pair *)malloc((cnt[msg_log[i].process_id] + INT_VEC_PAIR_DELTA) * sizeof(struct int_vec_pair));
+            for (int j = 0; j < cnt[msg_log[i].process_id]; i++)
+            {
+                new_pair[j].Tj = recvd_pair[msg_log[i].process_id][j].Tj;
+                new_pair[j].fail_v = recvd_pair[msg_log[i].process_id][j].fail_v;
+            }
+            free(recvd_pair[msg_log[i].process_id]);
+            recvd_pair[msg_log[i].process_id] = new_pair;
+        }
     }
 
     for (int i = 0; i < (int)time_v.size(); i++)
@@ -177,10 +243,10 @@ void Pet_kea::State::send_ctrl(int fildes[][2])
         cout << id << " sending " << msg.log_entry.id << " " << msg.log_entry.fail_nr << " " << msg.log_entry.res_time << " messages recieved: " << msg.recieved_cnt << endl;
         for (int i = 0; i < msg.recieved_cnt; i++)
         {
-            cout << "T^j:" << msg.recieved[i].first << " fail_v: ";
+            cout << "T^j:" << msg.recieved[i].Tj << " fail_v: ";
             for (int j = 0; j < (int)fail_v.size(); j++)
             {
-                cout << msg.recieved[i].second[j] << " ";
+                cout << msg.recieved[i].fail_v[j] << " ";
             }
             cout << endl;
         }
@@ -205,10 +271,10 @@ void Pet_kea::State::recv_ctrl(char *data)
     cout << id << " recieving " << c_msg.log_entry.id << " " << c_msg.log_entry.fail_nr << " " << c_msg.log_entry.res_time << " messages recieved: " << c_msg.recieved_cnt << endl;
     for (int i = 0; i < c_msg.recieved_cnt; i++)
     {
-        cout << "T^j:" << c_msg.recieved[i].first << " fail_v: ";
+        cout << "T^j:" << c_msg.recieved[i].Tj << " fail_v: ";
         for (int j = 0; j < (int)fail_v.size(); j++)
         {
-            cout << c_msg.recieved[i].second[j] << " ";
+            cout << c_msg.recieved[i].fail_v[j] << " ";
         }
         cout << endl;
     }
@@ -271,31 +337,46 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
         size_t size = time_v.size();
         msg_in.read((char *)&time_v[0], sizeof(time_v));
 
+        // TODO: change this to accomodate for changeable size
         int begin_log = msg_in.tellg();
         msg_in.seekg(0, msg_in.end);
         int end_log = msg_in.tellg();
         size = end_log - begin_log;
-        int to_read = size / (sizeof(msg_log->msg_buf) + sizeof(msg_log->recipient) + sizeof(msg_log->process_id) + sizeof(time_v) + sizeof(fail_v));
 
         msg_in.seekg(begin_log, ios::beg);
 
         msg_log = (msg_log_t *)malloc(MAX_LOG * sizeof(msg_log_t));
         // msg_in.read((char *)msg_log, size); // maybe excessive
+        char log_buffer[end_log];
+        char *curr_pos = log_buffer;
+        msg_in.read(log_buffer, end_log);
+        int read_msg_cnt = 0;
 
-        for (int i = 0; i < to_read; i++)
+        for (int j = 0, k = 0; k < (int)size; read_msg_cnt++)
         {
-            msg_in.read((char *)&msg_log[i], sizeof(msg_log->msg_buf) + sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
-            msg_log[i].time_v = vector<int>(process_cnt, 0);
-            msg_in.read((char *)&msg_log[i].time_v[0], sizeof(msg_log->time_v));
-            msg_log[i].fail_v = vector<int>(process_cnt, 0);
-            msg_in.read((char *)&msg_log[i].fail_v[0], sizeof(msg_log->fail_v));
+            j = deserialize_log(curr_pos, &msg_log[read_msg_cnt]);
+            curr_pos = curr_pos + j;
+            k = k + j;
+
+            // msg_in.read((char *)&msg_log[i], sizeof(msg_log->msg_buf) + sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
+            // msg_log[i].time_v = vector<int>(process_cnt, 0);
+            // msg_in.read((char *)&msg_log[i].time_v[0], sizeof(msg_log->time_v));
+            // msg_log[i].fail_v = vector<int>(process_cnt, 0);
+            // msg_in.read((char *)&msg_log[i].fail_v[0], sizeof(msg_log->fail_v));
         }
 
         // detect lost messages if crash happened during checkpoint
-        if (msg_cnt != to_read)
+        if (msg_cnt != read_msg_cnt)
         {
-            msg_cnt = to_read;
-            time_v = msg_log[to_read - 1].time_v;
+            msg_cnt = read_msg_cnt;
+            if (msg_cnt == 0)
+            {
+                time_v = vector<int>(process_cnt, 0);
+            }
+            else
+            {
+                time_v = msg_log[msg_cnt - 1].time_v;
+            }
         }
 
         // for (int i = 0; i < to_read; i++)
@@ -376,11 +457,16 @@ int Pet_kea::State::checkpoint()
 
     // append last messages
     msg_out.seekp(0, ios::end);
+    size_t log_size = SER_LOG_SIZE(time_v.size());
     for (; last_checkpoint < msg_cnt; last_checkpoint++)
     {
-        msg_out.write((char *)&msg_log[last_checkpoint], sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
-        msg_out.write((char *)&msg_log[last_checkpoint].time_v[0], sizeof(msg_log->time_v));
-        msg_out.write((char *)&msg_log[last_checkpoint].fail_v[0], sizeof(msg_log->fail_v));
+        char data[msg_log[last_checkpoint].msg_size + log_size];
+        serialize_log(&msg_log[last_checkpoint], data);
+        msg_out.write(data, msg_log[last_checkpoint].msg_size + log_size);
+
+        // msg_out.write((char *)&msg_log[last_checkpoint], sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
+        // msg_out.write((char *)&msg_log[last_checkpoint].time_v[0], sizeof(msg_log->time_v));
+        // msg_out.write((char *)&msg_log[last_checkpoint].fail_v[0], sizeof(msg_log->fail_v));
     }
     // msg_out.write((char *)&msg_log[last_checkpoint], (msg_cnt - last_checkpoint) * sizeof(msg_log_t));
     // last_checkpoint = msg_cnt;

@@ -1,2 +1,4 @@
 make the test env be able to handle sending messages without sleep
-implement the algorithm in a library
+handle the ctrl messages
+make sure that the .dat files dont get removed when restarting
+

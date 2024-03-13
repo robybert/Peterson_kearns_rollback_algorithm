@@ -13,6 +13,7 @@
 // using namespace std;
 
 const int MAX_LOG = 500;
+
 const int SAVE_CNT = 5;
 // const int STATE_SIZE =
 
@@ -20,8 +21,9 @@ namespace Pet_kea
 {
     // int SER_SIZE_CTRL_MSG_T(int i) = 6 * sizeof(int);
     //  const SER_SIZE_MSG_T = ;
-    inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); };
-
+    inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); }; // TODO: check this zise
+    inline size_t SER_LOG_SIZE(int v_size) { return 3 * sizeof(int) + v_size * 2 * sizeof(int); };
+    const int INT_VEC_PAIR_DELTA = 100;
     typedef enum message_type
     {
         MSG,
@@ -36,13 +38,21 @@ namespace Pet_kea
         int res_time;
     };
 
+    struct int_vec_pair
+    {
+        int Tj;
+        std::vector<int> fail_v;
+
+        int_vec_pair(int v_size) : fail_v(v_size, 0) {}
+    };
+
     struct ctrl_msg_t
     {
         message_type msg_type;
         int sending_process_nr;
         struct fail_log_t log_entry;
         int recieved_cnt;
-        std::pair<int, std::vector<int>> *recieved;
+        struct int_vec_pair *recieved;
     };
 
     // struct ptp_err
@@ -88,7 +98,8 @@ namespace Pet_kea
         void deserialize_ctrl(char *data, struct ctrl_msg_t *msg);
         void serialize(struct msg_t *msg, char *data);
         void deserialize(char *data, struct msg_t *msg);
-
+        void serialize_log(struct msg_log_t *log, char *data);
+        int deserialize_log(char *data, struct msg_log_t *log);
         void recv_ctrl(char *data);
         int store_msg(struct msg_t *msg, bool recipient);
 
