@@ -71,14 +71,14 @@ int send_err_msg(int process_nr, Pet_kea::State *state, int fildes[CHILDREN][2])
     msg.ptp_err.fildes[1] = fildes[process_nr][1];
     msg.ptp_err.pid = getpid();
 
-    char input[SER_ERR_MSG_SIZE];
+    char input[sizeof(msg_t)];
     serialize(&msg, input);
 
     for (int i = 0; i < CHILDREN; i++)
     {
         if (i == process_nr)
             continue;
-        ret = state->send_void(input, fildes[i], SER_ERR_MSG_SIZE);
+        ret = write(fildes[i][1], input, sizeof(msg_t)); // state->send_void(input, fildes[i], SER_ERR_MSG_SIZE);
         if (ret < 0)
         {
             perror("failure to write ERR msg");
@@ -175,7 +175,7 @@ int send_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
 {
     char input[sizeof(msg_t)];
     serialize(msg, input);
-    int ret = state->send_msg(input, fildes, sizeof(msg_t));
+    int ret = write(fildes[1], input, sizeof(msg_t)); // state->send_msg(input, fildes, sizeof(msg_t));
     if (ret < 0)
     {
         perror("write to pipe");
@@ -188,7 +188,7 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
 {
     char *output = (char *)malloc(sizeof(msg_t));
 
-    int ret = state->recv_msg(fildes, output, sizeof(msg_t));
+    int ret = read(fildes[0], output, sizeof(msg_t)); // state->recv_msg(fildes, output, sizeof(msg_t));
     deserialize(output, msg);
     if (ret < 0)
     {
@@ -229,7 +229,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
 
             exit(EXIT_FAILURE);
         }
-        state.send_ctrl(fildes);
+        // state.send_ctrl(fildes);
     }
     // close(fildes[process_nr][1]);       //close writing to your read pipe the pipe needs to stay open until the other processes have retrieved the FD
 
