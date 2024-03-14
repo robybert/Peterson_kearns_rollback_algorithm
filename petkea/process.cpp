@@ -218,7 +218,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     srand(SEED + process_nr);
     tv.tv_sec = 0;
     tv.tv_usec = 200000;
-    if (process_nr == 1)
+    if (process_nr == 0)
         restart = true;
     Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, restart);
 

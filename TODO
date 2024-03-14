@@ -1,4 +1,9 @@
 make the test env be able to handle sending messages without sleep
+
 handle the ctrl messages
-make sure that the .dat files dont get removed when restarting
+make sure that the .dat files dont get removed when restarting but do when starting normally
+--> check all .open() statements for truncate and append
+---> checked them now test them 
+
+close memleaks
 

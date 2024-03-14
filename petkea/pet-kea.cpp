@@ -316,7 +316,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
     {
         char filename[32];
         print_msg(id, filename);
-        ifstream msg_in(filename, ios::in | ios::binary);
+        ifstream msg_in(filename, ifstream::in | ifstream::binary);
 
         int *update = (int *)malloc(sizeof(int) * 3);
         msg_in.read((char *)update, sizeof(int) * 3);
@@ -343,7 +343,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
         int end_log = msg_in.tellg();
         size = end_log - begin_log;
 
-        msg_in.seekg(begin_log, ios::beg);
+        msg_in.seekg(begin_log, ifstream::beg);
 
         msg_log = (msg_log_t *)malloc(MAX_LOG * sizeof(msg_log_t));
         // msg_in.read((char *)msg_log, size); // maybe excessive
@@ -386,18 +386,18 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
 
         // close in fd and open out fd
         msg_in.close();
-        msg_out.open(filename, ios::out | ios::binary);
+        msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::app); // TODO: this is where .dat files get cleared
         print_fail(id, filename);
-        ifstream fail_in(filename, ios::in | ios::binary);
+        ifstream fail_in(filename, ifstream::in | ifstream::binary);
         fail_in.read((char *)&id, sizeof(id));
         fail_in.read((char *)&fail_v[0], sizeof(fail_v)); // TODO: write failurelog recovery
         fail_in.close();
 
-        ofstream fail_out(filename, ios::out | ios::binary);
-        fail_out.seekp(0, ios::end);
+        ofstream fail_out(filename, ofstream::out | ofstream::binary | ofstream::app);
+        fail_out.seekp(0, ofstream::end);
         fail_v[id]++;
         struct fail_log_t entry = {id, fail_v[id], time_v[id]};
-        fail_out.write((char *)&entry, sizeof(fail_log_t));
+        fail_out.write((char *)&entry, sizeof(fail_log_t)); // TODO: check if i want to append the fail file
         fail_out.close();
 
         // send_ctrl(fildes);
@@ -406,9 +406,9 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
     {
         char filename[32];
         print_fail(id, filename);
-        ofstream fail_out(filename, ios::out | ios::binary);
+        ofstream fail_out(filename, ofstream::out | ofstream::binary | ofstream::trunc);
         print_msg(id, filename);
-        msg_out.open(filename, ios::out | ios::binary);
+        msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::trunc);
 
         fail_out.write(reinterpret_cast<const char *>(&id), sizeof(id));
         fail_out.write((char *)&fail_v[0], sizeof(fail_v));
@@ -416,14 +416,6 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
 
         msg_log = (msg_log_t *)malloc(MAX_LOG * sizeof(msg_log_t));
     }
-}
-
-Pet_kea::State::State(int process_nr, int process_cnt, int fildes[][2]) : id(process_nr),
-                                                                          time_v(process_cnt, 0),
-                                                                          fail_v(process_cnt, 0),
-                                                                          msg_cnt(0),
-                                                                          last_checkpoint(0)
-{
 }
 
 Pet_kea::State::~State()
@@ -446,7 +438,7 @@ int Pet_kea::State::checkpoint()
     update--;
     update--;
 
-    msg_out.seekp(0, ios::beg);
+    msg_out.seekp(0, ofstream::beg);
     msg_out.write((char *)update, sizeof(int) * 3);
     free(update);
     // msg_out.write(reinterpret_cast<const char *>(&id), sizeof(id));
@@ -456,7 +448,7 @@ int Pet_kea::State::checkpoint()
     msg_out.write((char *)&time_v[0], sizeof(time_v));
 
     // append last messages
-    msg_out.seekp(0, ios::end);
+    msg_out.seekp(0, ofstream::end);
     size_t log_size = SER_LOG_SIZE(time_v.size());
     for (; last_checkpoint < msg_cnt; last_checkpoint++)
     {

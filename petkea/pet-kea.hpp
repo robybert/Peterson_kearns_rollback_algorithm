@@ -94,24 +94,122 @@ namespace Pet_kea
         int msg_cnt;
         int last_checkpoint;
         std::ofstream msg_out;
+
+        /**
+         * @brief Serializes a control message structure into a character array.
+         * @param msg Pointer to the control message structure to be serialized.
+         * @param data Pointer to the character array where the serialized data will be stored.
+         */
         void serialize_ctrl(struct ctrl_msg_t *msg, char *data);
+
+        /**
+         * @brief Deserializes a control message from a character array.
+         * @param data Pointer to the character array containing serialized data.
+         * @param msg Pointer to the control message structure where deserialized data will be stored.
+         */
         void deserialize_ctrl(char *data, struct ctrl_msg_t *msg);
+
+        /**
+         * @brief Serializes a general message structure into a character array.
+         * @param msg Pointer to the message structure to be serialized.
+         * @param data Pointer to the character array where the serialized data will be stored.
+         */
         void serialize(struct msg_t *msg, char *data);
+
+        /**
+         * @brief Deserializes a general message from a character array.
+         * @param data Pointer to the character array containing serialized data.
+         * @param msg Pointer to the message structure where deserialized data will be stored.
+         */
         void deserialize(char *data, struct msg_t *msg);
+
+        /**
+         * @brief Serializes a log message structure into a character array.
+         * @param log Pointer to the log message structure to be serialized.
+         * @param data Pointer to the character array where the serialized data will be stored.
+         */
         void serialize_log(struct msg_log_t *log, char *data);
+
+        /**
+         * @brief Deserializes a log message from a character array.
+         * @param data Pointer to the character array containing serialized data.
+         * @param log Pointer to the log message structure where deserialized data will be stored.
+         * @return returns the size of the deserialized log message
+         */
         int deserialize_log(char *data, struct msg_log_t *log);
+
+        /**
+         * @brief Receives a control message.
+         * @param data Pointer to the character array containing the received control message.
+         */
         void recv_ctrl(char *data);
+
+        /**
+         * @brief Stores a general message.
+         * @param msg Pointer to the message structure to be stored.
+         * @param recipient Flag indicating whether the message is recieved by the calling process.
+         * @return 0 on success, -1 on failure.
+         */
         int store_msg(struct msg_t *msg, bool recipient);
 
     public:
+        /**
+         * @brief Constructor for State class.
+         * @param process_nr The process number.
+         * @param process_cnt The total number of processes.
+         * @param restart Flag indicating whether the process is being restarted.
+         */
         State(int process_nr, int process_cnt, bool restart);
-        State(int process_nr, int process_cnt, int fildes[][2]);
+
+        /**
+         * @brief Destructor for State class.
+         */
         ~State();
+
+        /**
+         * @brief Creates a checkpoint of the process state and the recieved messages.
+         * @return 0 on success, -1 on failure.
+         */
         int checkpoint();
+
+        /**
+         * @brief Sends data to another process without it being recorded in the state.
+         * @param input Pointer to the data to be sent.
+         * @param fildes Array containing file descriptors of the pipe.
+         * @param size Size of the data to be sent.
+         * @return Number of bytes sent on success, -1 on failure.
+         */
         int send_void(char *input, int fildes[2], int size);
+
+        /**
+         * @brief Sends a message to another process that will be recorded in the state.
+         *
+         * @param input Pointer to the message to be sent.
+         * @param fildes Array containing file descriptors of the pipe.
+         * @param size Size of the message to be sent.
+         * @return Number of bytes sent on success, -1 on failure.
+         */
         int send_msg(char *input, int fildes[2], int size);
+
+        /**
+         * @brief Receives a message from another process
+         * @param fildes Array containing file descriptors of the pipe.
+         * @param output Pointer to the buffer where the received message will be stored.
+         * @param size Size of the buffer.
+         * @return Number of bytes received on success, -1 on failure.
+         */
         int recv_msg(int fildes[2], char *output, int size);
+
+        /**
+         * @brief Performs recovery of the process state.
+         * @return 0 on success, -1 on failure.
+         */
         int recovery();
+
+        /**
+         * @brief Sends control message to other processes to indicate that a failure occured.
+         * @param fildes Array of arrays containing file descriptors of the pipes.
+         */
         void send_ctrl(int fildes[][2]);
     };
 }
