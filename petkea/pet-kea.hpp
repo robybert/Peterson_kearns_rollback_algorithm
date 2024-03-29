@@ -1,5 +1,10 @@
-#ifndef _PETKEA_H_
-#define _PETKEA_H_
+/**
+ * @file pet-kea.hpp
+ * @brief Header file containing the state class and its member functions
+ */
+
+#ifndef _PETKEA_HPP_
+#define _PETKEA_HPP_
 
 #include <unistd.h>
 #include <vector>
@@ -92,7 +97,8 @@ namespace Pet_kea
         std::vector<int> fail_v;
         msg_log_t *msg_log;
         int msg_cnt;
-        int last_checkpoint;
+        std::vector<int> checkpoints;
+        std::vector<std::vector<int>> ck_time_v;
         std::ofstream msg_out;
 
         /**
@@ -151,6 +157,8 @@ namespace Pet_kea
          * @return 0 on success, -1 on failure.
          */
         int store_msg(struct msg_t *msg, bool recipient);
+
+        int rollback(struct ctrl_msg_t *msg);
 
     public:
         /**

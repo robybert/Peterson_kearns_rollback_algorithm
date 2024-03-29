@@ -306,11 +306,23 @@ int Pet_kea::State::store_msg(struct msg_t *msg, bool recipient)
     return 0;
 }
 
+int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
+{
+    // RB.2
+    if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
+    {
+        //  RB.2.1      remove ckeckpoints T^i > crT^i, set state and T to latest ckeckpoint, replays
+
+        //  RB.2.2
+        //  RB.2.3
+    }
+}
+
 Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(process_nr),
                                                                        time_v(process_cnt, 0),
                                                                        fail_v(process_cnt, 0),
                                                                        msg_cnt(0),
-                                                                       last_checkpoint(0)
+                                                                       checkpoints(1, 0)
 {
     if (restart)
     {
@@ -318,14 +330,17 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
         print_msg(id, filename);
         ifstream msg_in(filename, ifstream::in | ifstream::binary);
 
-        int *update = (int *)malloc(sizeof(int) * 3);
-        msg_in.read((char *)update, sizeof(int) * 3);
+        int *update = (int *)malloc(sizeof(int) * 4);
+        msg_in.read((char *)update, sizeof(int) * 4);
 
         id = *update;
         update++;
         msg_cnt = *update;
         update++;
-        last_checkpoint = *update;
+        // last_checkpoint = *update; // TODO: restore checkpoint vector
+        update++;
+        int num_checkpoints = *update;
+        update--;
         update--;
         update--;
         free(update);
@@ -351,18 +366,41 @@ Pet_kea::State::State(int process_nr, int process_cnt, bool restart) : id(proces
         char *curr_pos = log_buffer;
         msg_in.read(log_buffer, end_log);
         int read_msg_cnt = 0;
-
-        for (int j = 0, k = 0; k < (int)size; read_msg_cnt++)
+        for (int i = 0; i < num_checkpoints; i++)
         {
-            j = deserialize_log(curr_pos, &msg_log[read_msg_cnt]);
-            curr_pos = curr_pos + j;
-            k = k + j;
+            curr_pos++;
+            int ck_msg_cnt = *curr_pos;
+            curr_pos++;
+            checkpoints.push_back(*curr_pos);
+            int to_read = ck_msg_cnt - *curr_pos;
+            curr_pos++;
+            std::vector<int> temp_ck_time_v;
 
-            // msg_in.read((char *)&msg_log[i], sizeof(msg_log->msg_buf) + sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
-            // msg_log[i].time_v = vector<int>(process_cnt, 0);
-            // msg_in.read((char *)&msg_log[i].time_v[0], sizeof(msg_log->time_v));
-            // msg_log[i].fail_v = vector<int>(process_cnt, 0);
-            // msg_in.read((char *)&msg_log[i].fail_v[0], sizeof(msg_log->fail_v));
+            for (int i = 0; i < (int)time_v.size(); i++)
+            {
+                temp_ck_time_v.push_back(*curr_pos);
+                curr_pos++;
+            }
+            ck_time_v.push_back(temp_ck_time_v);
+
+            for (int j = 0, ret = 0; j < to_read; j++, read_msg_cnt++)
+            {
+                ret = deserialize_log(curr_pos, &msg_log[read_msg_cnt]);
+                curr_pos += ret;
+            }
+
+            // for (int j = 0, k = 0; k < (int)size; read_msg_cnt++)
+            // {
+            //     j = deserialize_log(curr_pos, &msg_log[read_msg_cnt]);
+            //     curr_pos = curr_pos + j;
+            //     k = k + j;
+
+            //     // msg_in.read((char *)&msg_log[i], sizeof(msg_log->msg_buf) + sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
+            //     // msg_log[i].time_v = vector<int>(process_cnt, 0);
+            //     // msg_in.read((char *)&msg_log[i].time_v[0], sizeof(msg_log->time_v));
+            //     // msg_log[i].fail_v = vector<int>(process_cnt, 0);
+            //     // msg_in.read((char *)&msg_log[i].fail_v[0], sizeof(msg_log->fail_v));
+            // }
         }
 
         // detect lost messages if crash happened during checkpoint
@@ -429,18 +467,23 @@ int Pet_kea::State::checkpoint()
     // write state and time vector at the start of the file
     // TODO: write this in one go
 
-    int *update = (int *)malloc(sizeof(int) * 3);
+    int *update = (int *)malloc(sizeof(int) * 4);
     *update = id;
     update++;
     *update = msg_cnt;
     update++;
-    *update = last_checkpoint;
+    *update = checkpoints.back();
+    update++;
+    *update = checkpoints.size() - 1;
+    update--;
     update--;
     update--;
 
+    // last_checkpoint.push_back(msg_cnt);
+
     msg_out.seekp(0, ofstream::beg);
-    msg_out.write((char *)update, sizeof(int) * 3);
-    free(update);
+    msg_out.write((char *)update, sizeof(int) * 4);
+    // free(update);
     // msg_out.write(reinterpret_cast<const char *>(&id), sizeof(id));
     // msg_out.write(reinterpret_cast<const char *>(&msg_cnt), sizeof(msg_cnt));
     // msg_out.write(reinterpret_cast<const char *>(&last_checkpoint), sizeof(last_checkpoint));
@@ -450,11 +493,14 @@ int Pet_kea::State::checkpoint()
     // append last messages
     msg_out.seekp(0, ofstream::end);
     size_t log_size = SER_LOG_SIZE(time_v.size());
-    for (; last_checkpoint < msg_cnt; last_checkpoint++)
+
+    msg_out.write((char *)update, sizeof(int) * 3);
+    msg_out.write((char *)&time_v[0], sizeof(time_v));
+    for (int i = checkpoints.back(); i < msg_cnt; i++)
     {
-        char data[msg_log[last_checkpoint].msg_size + log_size];
-        serialize_log(&msg_log[last_checkpoint], data);
-        msg_out.write(data, msg_log[last_checkpoint].msg_size + log_size);
+        char data[msg_log[i].msg_size + log_size];
+        serialize_log(&msg_log[i], data);
+        msg_out.write(data, msg_log[i].msg_size + log_size);
 
         // msg_out.write((char *)&msg_log[last_checkpoint], sizeof(msg_log->recipient) + sizeof(msg_log->process_id));
         // msg_out.write((char *)&msg_log[last_checkpoint].time_v[0], sizeof(msg_log->time_v));
@@ -462,6 +508,8 @@ int Pet_kea::State::checkpoint()
     }
     // msg_out.write((char *)&msg_log[last_checkpoint], (msg_cnt - last_checkpoint) * sizeof(msg_log_t));
     // last_checkpoint = msg_cnt;
+    checkpoints.push_back(msg_cnt);
+    ck_time_v.push_back(time_v);
 
     return 0;
 }

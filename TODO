@@ -6,4 +6,19 @@ make sure that the .dat files dont get removed when restarting but do when start
 ---> checked them now test them 
 
 close memleaks
+fix error checking with try catch\
+minimize read and write calls
+
+
+maybe switch pidfd_getfd to sockets with SO_REUSEPORT
+read/write non blocking --> 
+
+make rollback logic
+RB1
+RB2
+RB3
+RB4
+RB5
+RB6
+check restart logic
 
