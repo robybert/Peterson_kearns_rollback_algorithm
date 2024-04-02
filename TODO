@@ -22,3 +22,10 @@ RB5
 RB6
 check restart logic
 
+check all fail_v_s for correct logic
+
+
+store faillog
+find a way to decern duplicate messages
+
+

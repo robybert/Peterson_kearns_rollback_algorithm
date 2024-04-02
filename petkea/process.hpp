@@ -7,7 +7,7 @@
 #define _PROCESS_HPP_
 
 #include <unistd.h>
-const int CHILDREN = 2;
+const int CHILDREN = 3;
 #include "pet-kea.hpp"
 
 const int SER_ERR_MSG_SIZE = sizeof(int) * 5;
@@ -104,7 +104,7 @@ int recv_err_msg(struct msg_t *buffer, int fildes[CHILDREN][2]);
  * @param state The state of the peterson-kearns class
  * @return Returns the pid of the created process, for failure -1
  */
-int send_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state);
+int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state);
 
 /**
  * @brief recieves a message

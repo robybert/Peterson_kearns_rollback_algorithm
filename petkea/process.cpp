@@ -171,11 +171,11 @@ void deserialize(char *data, struct msg_t *msg)
     }
 }
 
-int send_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
+int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
 {
     char input[sizeof(msg_t)];
     serialize(msg, input);
-    int ret = state->send_msg(input, fildes, sizeof(msg_t));
+    int ret = state->send_msg(input, process_id, sizeof(msg_t));
     if (ret < 0)
     {
         perror("write to pipe");
@@ -186,7 +186,7 @@ int send_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
 
 int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
 {
-    char *output = (char *)malloc(sizeof(msg_t));
+    char output[sizeof(msg_t)];
 
     int ret = state->recv_msg(fildes, output, sizeof(msg_t));
     deserialize(output, msg);
@@ -220,7 +220,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     tv.tv_usec = 200000;
     if (process_nr == 0)
         restart = true;
-    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, restart);
+    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
 
     if (restart)
     {
@@ -230,7 +230,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
 
         //     exit(EXIT_FAILURE);
         // }
-        state.send_ctrl(fildes);
+        // state.send_ctrl(fildes);
     }
     // close(fildes[process_nr][1]);       //close writing to your read pipe the pipe needs to stay open until the other processes have retrieved the FD
 
@@ -275,9 +275,9 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
 
         buffer.type = MSG;
         buffer.sending_process_nr = process_nr;
-        sprintf(buffer.ptp_msg.msg, "message number %d", msg_nr++);
+        sprintf(buffer.ptp_msg.msg, "message number %d from process %d to process %d", msg_nr++, process_nr, dest_process_nr);
 
-        // ret = send_msg(&buffer, fildes[dest_process_nr], &state);
+        // ret = send_msg(&buffer, dest_process_nr, &state);
         if (ret == -1)
         {
             is_busy[dest_process_nr] = true;

@@ -238,7 +238,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
         ret = select(fildes[process_nr][0] + 1, &ready_fd, NULL, NULL, &tv);
         if (ret == 0)
         {
-            // cout << "timeout process " << process_nr << endl;
+            cout << "timeout process " << process_nr << endl;
         }
         else if (ret < 0)
         {
@@ -251,7 +251,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
             if (buffer.msg_type == MSG)
             {
                 msg_cnt++;
-                cout << process_nr << " " << buffer.contents.ptp_msg.msg_buf << endl;
+                // cout << process_nr << " " << buffer.contents.ptp_msg.msg_buf << endl;
                 continue;
             }
             else if (buffer.msg_type == ERR)
