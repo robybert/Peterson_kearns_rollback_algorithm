@@ -91,6 +91,15 @@ namespace Pet_kea
         std::vector<int> fail_v_s;
     };
 
+    /**
+     * @brief Sends data to another process without it being recorded in the state.
+     * @param input Pointer to the data to be sent.
+     * @param fildes Array containing file descriptors of the pipe.
+     * @param size Size of the data to be sent.
+     * @return Number of bytes sent on success, -1 on failure.
+     */
+    int send_void(char *input, int fildes[2], int size);
+
     class State
     {
     private:
@@ -190,15 +199,6 @@ namespace Pet_kea
         int checkpoint();
 
         /**
-         * @brief Sends data to another process without it being recorded in the state.
-         * @param input Pointer to the data to be sent.
-         * @param fildes Array containing file descriptors of the pipe.
-         * @param size Size of the data to be sent.
-         * @return Number of bytes sent on success, -1 on failure.
-         */
-        int send_void(char *input, int fildes[2], int size);
-
-        /**
          * @brief Sends a message to another process that will be recorded in the state.
          *
          * @param input Pointer to the message to be sent.
@@ -216,12 +216,6 @@ namespace Pet_kea
          * @return 0 on success, 1 after recieving a duplicate or orphaned message that was discarded, -1 on failure.
          */
         int recv_msg(int fildes[2], char *output, int size);
-
-        /**
-         * @brief Performs recovery of the process state.
-         * @return 0 on success, -1 on failure.
-         */
-        int recovery();
 
         /**
          * @brief Sends control message to other processes to indicate that a failure occured.

@@ -62,7 +62,7 @@ pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2])
     return new_c_pid;
 }
 
-int send_err_msg(int process_nr, Pet_kea::State *state, int fildes[CHILDREN][2])
+int send_err_msg(int process_nr, int fildes[CHILDREN][2])
 {
     int ret;
     struct msg_t msg;
@@ -80,7 +80,7 @@ int send_err_msg(int process_nr, Pet_kea::State *state, int fildes[CHILDREN][2])
     {
         if (i == process_nr)
             continue;
-        ret = state->send_void(input, fildes[i], SER_ERR_MSG_SIZE);
+        ret = Pet_kea::send_void(input, fildes[i], SER_ERR_MSG_SIZE);
         if (ret < 0)
         {
             perror("failure to write ERR msg");
@@ -222,19 +222,18 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     tv.tv_usec = 200000;
     // if (process_nr == 0)
     //     restart = true;
-    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
 
     if (restart)
     {
-        ret = send_err_msg(process_nr, &state, fildes);
+        ret = send_err_msg(process_nr, fildes);
         if (ret == -1)
         {
 
             exit(EXIT_FAILURE);
         }
-        // state.send_ctrl(fildes);
     }
-    // close(fildes[process_nr][1]);       //close writing to your read pipe the pipe needs to stay open until the other processes have retrieved the FD
+
+    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
 
     while (1)
     {
@@ -267,6 +266,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
                 if (ret != -1)
                     is_busy[buffer.sending_process_nr] = false;
                 // TODO: send confirmation
+                state.update_fd(buffer.sending_process_nr, fildes[buffer.sending_process_nr]);
             }
         }
 

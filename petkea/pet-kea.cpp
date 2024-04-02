@@ -360,7 +360,6 @@ void Pet_kea::State::send_ctrl()
 void Pet_kea::State::recv_ctrl(struct ctrl_msg_t *c_msg)
 {
 
-    cout << id << " recieving CTRL_MSG from process : " << c_msg->log_entry.id << "fail_nr: " << c_msg->log_entry.fail_nr << "res_time: " << c_msg->log_entry.res_time << " messages recieved: " << c_msg->recieved_cnt << endl;
     // for (int i = 0; i < c_msg.recieved_cnt; i++)
     // {
     //     cout << "T^j:" << c_msg.recieved[i].Tj << " fail_v: ";
@@ -371,16 +370,6 @@ void Pet_kea::State::recv_ctrl(struct ctrl_msg_t *c_msg)
     //     cout << endl;
     // }
     // TODO:handle the ctrl messages
-
-    for (set<pair<int, vector<int>>>::iterator ptr = c_msg->recvd_msgs.begin(); ptr != c_msg->recvd_msgs.end(); ptr++)
-    {
-        cout << "       Tj: " << ptr->first << " fail_v: ";
-        for (int j = 0; j < (int)fail_v.size(); j++)
-        {
-            cout << ptr->second[j] << ":";
-        }
-        cout << " " << endl;
-    }
 }
 
 int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
@@ -426,6 +415,17 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
 
 int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 {
+    cout << "entered the rollback section" << endl;
+    cout << id << " recieving CTRL_MSG from process : " << msg->log_entry.id << "fail_nr: " << msg->log_entry.fail_nr << "res_time: " << msg->log_entry.res_time << " messages recieved: " << msg->recieved_cnt << endl;
+    for (set<pair<int, vector<int>>>::iterator ptr = msg->recvd_msgs.begin(); ptr != msg->recvd_msgs.end(); ptr++)
+    {
+        cout << "       Tj: " << ptr->first << " fail_v: ";
+        for (int j = 0; j < (int)fail_v.size(); j++)
+        {
+            cout << ptr->second[j] << ":";
+        }
+        cout << " " << endl;
+    }
     // RB.2
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
     {
@@ -802,17 +802,25 @@ int Pet_kea::State::checkpoint()
     return 0;
 }
 
-int Pet_kea::State::send_void(char *input, int fildes[2], int size)
+int Pet_kea::send_void(char *input, int fildes[2], int size)
 {
     struct msg_t msg;
     msg.msg_type = VOID;
-    msg.sending_process_nr = id;
+    msg.sending_process_nr = 0; // not important for a void message
     msg.msg_size = size;
     msg.msg_buf = input;
 
     char data[sizeof(msg_t) + size];
 
-    serialize(&msg, data);
+    int *q = (int *)data;
+    *q = VOID;
+    q++;
+    *q = size;
+    q++;
+    *q = 0;
+    q++;
+    memcpy(q, input, size);
+    // serialize(&msg, data);
 
     if (write(fildes[1], data, sizeof(msg_t) + size) < 0)
     {
@@ -936,10 +944,5 @@ int Pet_kea::State::update_fd(int process_id, int fd[2])
 
     fildes[process_id][0] = fd[0];
     fildes[process_id][1] = fd[1];
-    return 0;
-}
-
-int Pet_kea::State::recovery()
-{
     return 0;
 }

@@ -87,7 +87,7 @@ void deserialize(char *data, struct msg_t *msg);
  * @param fildes The file descriptors of the pipes
  * @return Returns 0 for succes, -1 for failure
  */
-int send_err_msg(int process_nr, Pet_kea::State *state, int fildes[CHILDREN][2]);
+int send_err_msg(int process_nr, int fildes[CHILDREN][2]);
 
 /**
  * @brief Recieves the CTRL message to close and re-establish the FD
