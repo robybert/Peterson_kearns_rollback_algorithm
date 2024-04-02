@@ -157,7 +157,7 @@ namespace Pet_kea
          * @brief Receives a control message.
          * @param data Pointer to the character array containing the received control message.
          */
-        void recv_ctrl(char *data);
+        void recv_ctrl(struct ctrl_msg_t *c_msg);
 
         /**
          * @brief Stores a general message.

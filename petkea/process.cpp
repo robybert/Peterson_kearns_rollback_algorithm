@@ -56,6 +56,8 @@ pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2])
         return -1;
     }
 
+    sleep(3);
+
     new_c_pid = fork_process(process_nr, fildes, true);
     return new_c_pid;
 }
@@ -218,18 +220,18 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     srand(SEED + process_nr);
     tv.tv_sec = 0;
     tv.tv_usec = 200000;
-    if (process_nr == 0)
-        restart = true;
+    // if (process_nr == 0)
+    //     restart = true;
     Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
 
     if (restart)
     {
-        // ret = send_err_msg(process_nr, &state, fildes);
-        // if (ret == -1)
-        // {
+        ret = send_err_msg(process_nr, &state, fildes);
+        if (ret == -1)
+        {
 
-        //     exit(EXIT_FAILURE);
-        // }
+            exit(EXIT_FAILURE);
+        }
         // state.send_ctrl(fildes);
     }
     // close(fildes[process_nr][1]);       //close writing to your read pipe the pipe needs to stay open until the other processes have retrieved the FD
@@ -277,7 +279,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
         buffer.sending_process_nr = process_nr;
         sprintf(buffer.ptp_msg.msg, "message number %d from process %d to process %d", msg_nr++, process_nr, dest_process_nr);
 
-        // ret = send_msg(&buffer, dest_process_nr, &state);
+        ret = send_msg(&buffer, dest_process_nr, &state);
         if (ret == -1)
         {
             is_busy[dest_process_nr] = true;

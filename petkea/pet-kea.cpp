@@ -357,11 +357,10 @@ void Pet_kea::State::send_ctrl()
     }
 }
 
-void Pet_kea::State::recv_ctrl(char *data)
+void Pet_kea::State::recv_ctrl(struct ctrl_msg_t *c_msg)
 {
-    struct ctrl_msg_t c_msg;
-    deserialize_ctrl(data, &c_msg);
-    cout << id << " recieving CTRL_MSG from process : " << c_msg.log_entry.id << "fail_nr: " << c_msg.log_entry.fail_nr << "res_time: " << c_msg.log_entry.res_time << " messages recieved: " << c_msg.recieved_cnt << endl;
+
+    cout << id << " recieving CTRL_MSG from process : " << c_msg->log_entry.id << "fail_nr: " << c_msg->log_entry.fail_nr << "res_time: " << c_msg->log_entry.res_time << " messages recieved: " << c_msg->recieved_cnt << endl;
     // for (int i = 0; i < c_msg.recieved_cnt; i++)
     // {
     //     cout << "T^j:" << c_msg.recieved[i].Tj << " fail_v: ";
@@ -373,7 +372,7 @@ void Pet_kea::State::recv_ctrl(char *data)
     // }
     // TODO:handle the ctrl messages
 
-    for (set<pair<int, vector<int>>>::iterator ptr = c_msg.recvd_msgs.begin(); ptr != c_msg.recvd_msgs.end(); ptr++)
+    for (set<pair<int, vector<int>>>::iterator ptr = c_msg->recvd_msgs.begin(); ptr != c_msg->recvd_msgs.end(); ptr++)
     {
         cout << "       Tj: " << ptr->first << " fail_v: ";
         for (int j = 0; j < (int)fail_v.size(); j++)
@@ -876,7 +875,10 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 
         ret = read(fildes[0], extra_data, SER_SIZE_CTRL_MSG_T(*q, fail_v.size()) - init_read_size);
 
-        recv_ctrl(data);
+        struct ctrl_msg_t c_msg;
+        deserialize_ctrl(data, &c_msg);
+
+        rollback(&c_msg);
     }
     else if (VOID == (msg_type)*q)
     {
