@@ -1,2 +1,6 @@
-.vscode
-
+.vscode/*
+*.dat
+*.o
+*.gch
+output
+*.json

@@ -21,7 +21,6 @@
 
 const int MAX_LOG = 500;
 
-const int SAVE_CNT = 15;
 // const int STATE_SIZE =
 
 namespace Pet_kea
@@ -29,7 +28,9 @@ namespace Pet_kea
     // int SER_SIZE_CTRL_MSG_T(int i) = 6 * sizeof(int);
     //  const SER_SIZE_MSG_T = ;
     inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); }; // TODO: check this zise
-    inline size_t SER_LOG_SIZE(int v_size) { return 3 * sizeof(int) + v_size * 3 * sizeof(int); };
+
+    const int SAVE_CNT = 10;
+    // int AVERAGE_MSG_BYTESIZE = 72;
     const int INT_VEC_PAIR_DELTA = 100;
     typedef enum message_type
     {
@@ -179,6 +180,9 @@ namespace Pet_kea
         int rollback(struct ctrl_msg_t *msg);
 
     public:
+        const int SER_LOG_SIZE = 3 * sizeof(int) + time_v.size() * 3 * sizeof(int);
+        const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
+        // const int MSG_CHECKPOINT_BYTESYZE = SAVE_CNT * (AVERAGE_MSG_BYTESIZE + (3 + 3 * time_v.size()) * sizeof(int));
         /**
          * @brief Constructor for State class.
          * @param process_nr The process number.

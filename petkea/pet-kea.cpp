@@ -430,7 +430,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
     {
         //  RB.2.1      remove ckeckpoints T^i > crT^i, set state and T to latest ckeckpoint, replays
-        int to_remove = 0, size = ck_time_v.size() - 1, i = ck_time_v.at(size - to_remove).at(msg->sending_process_nr);
+        int to_remove = 0, size = ck_time_v.size() - 1, i = ck_time_v.back().at(msg->sending_process_nr);
 
         while (i > msg->log_entry.res_time)
         {
@@ -441,9 +441,9 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         to_remove--;
 
         // remove the to_remove checkpoints
-        int bytes_to_remove = to_remove * (sizeof(int) * 3 + sizeof(time_v)) + (msg_cnt - checkpoints[size - to_remove]) * SER_LOG_SIZE(time_v.size());
+        int bytes_to_remove = to_remove * (sizeof(int) * (3 + time_v.size())) + (checkpoints.back() - checkpoints[size - to_remove]) * SER_LOG_SIZE;
 
-        for (int i = checkpoints[size - to_remove]; i < msg_cnt; i++)
+        for (int i = checkpoints[size - to_remove]; i < checkpoints.back(); i++)
         {
             bytes_to_remove += msg_log[i].msg_size * sizeof(char); // TODO: check the size
         }
@@ -506,7 +506,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         }
         if (!indices_to_rem.empty())
         {
-            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt);
+            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt); // TODO: test this
             indices_to_rem.clear();
         }
 
@@ -561,8 +561,8 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
                 indices_to_rem.push_back(i);
             }
 
-            // retransmit send events that have not arrived RB.3.3
-            if (!msg_log[i].recipient && !msg->recvd_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_s[id], msg_log[i].fail_v_s))) // TODO: check if contains is working
+            // retransmit send events that have not arrived RB.3.3 TODO: fix this it is not working as it should
+            if (!msg_log[i].recipient && !(msg->recvd_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_s[id], msg_log[i].fail_v_s)))) // TODO: check if contains is working
             {
                 struct msg_t retransmit_msg;
                 retransmit_msg.msg_type = MSG;
@@ -595,8 +595,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restart) : id(process_nr),
                                                                                      time_v(process_cnt, 0),
                                                                                      fail_v(process_cnt, 0),
-                                                                                     msg_cnt(0),
-                                                                                     checkpoints(1, 0)
+                                                                                     msg_cnt(0)
 {
     fildes = (int **)malloc(process_cnt * sizeof(int *));
     for (int i = 0; i < process_cnt; i++)
@@ -631,7 +630,14 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
         // msg_in.read((char *)&msg_cnt, sizeof(msg_cnt));
         // msg_in.read((char *)&last_checkpoint, sizeof(last_checkpoint));
         // time_v.resize(process_cnt);
-        msg_in.read((char *)&time_v[0], sizeof(time_v));
+        update = (int *)malloc(time_v.size() * sizeof(int));
+
+        msg_in.read((char *)update, time_v.size() * sizeof(int));
+        for (int i = 0; i < (int)time_v.size(); i++)
+        {
+            time_v[i] = *update;
+            update++;
+        }
 
         // TODO: change this to accomodate for changeable size
         int begin_log = msg_in.tellg();
@@ -719,6 +725,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
         fail_out.close();
 
         send_ctrl();
+        exit(0);
     }
     else
     {
@@ -733,6 +740,8 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
         fail_out.close();
 
         msg_log = (msg_log_t *)malloc(MAX_LOG * sizeof(msg_log_t));
+        checkpoints.push_back(0);
+        ck_time_v.push_back(vector<int>(process_cnt, 0));
     }
 }
 
@@ -754,7 +763,7 @@ int Pet_kea::State::checkpoint()
     update++;
     *update = checkpoints.back();
     update++;
-    *update = checkpoints.size() - 1;
+    *update = checkpoints.size();
     update--;
     update--;
     update--;
@@ -767,16 +776,20 @@ int Pet_kea::State::checkpoint()
     // msg_out.write(reinterpret_cast<const char *>(&id), sizeof(id));
     // msg_out.write(reinterpret_cast<const char *>(&msg_cnt), sizeof(msg_cnt));
     // msg_out.write(reinterpret_cast<const char *>(&last_checkpoint), sizeof(last_checkpoint));
-
-    msg_out.write((char *)&time_v[0], sizeof(time_v));
+    int *time_v_buffer = (int *)malloc(sizeof(int) * time_v.size());
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        time_v_buffer[i] = time_v[i];
+    }
+    msg_out.write((char *)time_v_buffer, sizeof(int) * time_v.size());
+    // msg_out.write((char *)&time_v[0], sizeof(time_v));
 
     // append last messages
     msg_out.seekp(0, ofstream::end);
-    size_t log_size = SER_LOG_SIZE(time_v.size());
+    size_t log_size = SER_LOG_SIZE;
 
     msg_out.write((char *)update, sizeof(int) * 3);
 
-    int *time_v_buffer = (int *)malloc(sizeof(int) * time_v.size());
     for (int i = 0; i < (int)time_v.size(); i++)
     {
         time_v_buffer[i] = time_v[i];
@@ -798,6 +811,7 @@ int Pet_kea::State::checkpoint()
     // last_checkpoint = msg_cnt;
     checkpoints.push_back(msg_cnt);
     ck_time_v.push_back(time_v);
+    msg_out.flush();
 
     return 0;
 }
@@ -887,6 +901,7 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
         deserialize_ctrl(data, &c_msg);
 
         rollback(&c_msg);
+        return 1;
     }
     else if (VOID == (msg_type)*q)
     {

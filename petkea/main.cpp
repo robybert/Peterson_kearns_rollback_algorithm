@@ -31,7 +31,7 @@ int main(int argc, char const *argv[])
         cout << "parent created child " << i << " with c_pid " << c_pid[i] << endl;
     }
 
-    int to_restart = 1;
+    int to_restart = 0;
 
     // rng for time to wait
     this_thread::sleep_for(chrono::seconds(17));

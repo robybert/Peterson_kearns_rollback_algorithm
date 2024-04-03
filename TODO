@@ -24,6 +24,8 @@ check restart logic
 
 check all fail_v_s for correct logic
 
+check all write flushes
+
 
 store faillog
 find a way to decern duplicate messages

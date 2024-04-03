@@ -191,12 +191,18 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
     char output[sizeof(msg_t)];
 
     int ret = state->recv_msg(fildes, output, sizeof(msg_t));
-    deserialize(output, msg);
+
     if (ret < 0)
     {
         perror("read from pipe");
         return -1;
     }
+    else if (ret == 1)
+    {
+        return 1;
+    }
+
+    deserialize(output, msg);
     return 0;
 }
 
@@ -253,6 +259,9 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
         {
 
             ret = recv_msg(&buffer, fildes[process_nr], &state);
+            if (ret == 1)
+                break;
+
             if (buffer.type == MSG)
             {
                 msg_cnt++;
