@@ -36,7 +36,7 @@ struct msg_t
 
 const int BSIZE = sizeof(msg_t);
 const int SEED = 555432;
-const int CHILDREN = 2;
+const int CHILDREN = 3;
 
 void serialize(struct msg_t *msg, char *data);
 

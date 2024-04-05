@@ -39,6 +39,7 @@ pid_t fork_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     else if (c_pid == 0)
     { // child process
         msg_process(process_nr, fildes, restart);
+        cout << "child EXIT" << endl;
     }
     return c_pid;
 }
@@ -163,7 +164,6 @@ void deserialize(char *data, struct msg_t *msg)
     }
     else
     {
-        // TODO: serialize err msg
         msg->ptp_err.pid = (pid_t)*q;
         q++;
         msg->ptp_err.fildes[0] = *q;
@@ -197,13 +197,9 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
         perror("read from pipe");
         return -1;
     }
-    else if (ret == 1)
-    {
-        return 1;
-    }
 
     deserialize(output, msg);
-    return 0;
+    return ret;
 }
 
 void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
@@ -224,9 +220,9 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
     FD_SET(fildes[process_nr][0], &current_fd);
 
     srand(SEED + process_nr);
-    tv.tv_sec = 0;
-    tv.tv_usec = 200000;
-    // if (process_nr == 0)
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    // if (process_nr == 1)
     //     restart = true;
 
     if (restart)
@@ -259,8 +255,8 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
         {
 
             ret = recv_msg(&buffer, fildes[process_nr], &state);
-            if (ret == 1)
-                break;
+            if (ret == 1 || ret == 2)
+                continue;
 
             if (buffer.type == MSG)
             {
@@ -292,8 +288,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
         if (ret == -1)
         {
             is_busy[dest_process_nr] = true;
-            // if (send_msg(process_nr, dest_process_nr, buffer, fildes) == -1)
-            //     is_busy[dest_process_nr] = true;
+            // TODO: err checking
         }
         sleep(1);
     }

@@ -1,10 +1,5 @@
 make the test env be able to handle sending messages without sleep
 
-handle the ctrl messages
-make sure that the .dat files dont get removed when restarting but do when starting normally
---> check all .open() statements for truncate and append
----> checked them now test them 
-
 close memleaks
 fix error checking with try catch\
 minimize read and write calls
@@ -13,21 +8,15 @@ minimize read and write calls
 maybe switch pidfd_getfd to sockets with SO_REUSEPORT
 read/write non blocking --> 
 
-make rollback logic
-RB1
-RB2
-RB3
-RB4
-RB5
-RB6
 check restart logic
+check rollback logic
 
 check all fail_v_s for correct logic
 
 check all write flushes
 
 
-store faillog
-find a way to decern duplicate messages
+store faillog --> for check orphaned
+find a way to decern duplicate messages --> for check duplicate --> hashfunction???
 
 

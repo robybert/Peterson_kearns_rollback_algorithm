@@ -25,12 +25,9 @@ const int MAX_LOG = 500;
 
 namespace Pet_kea
 {
-    // int SER_SIZE_CTRL_MSG_T(int i) = 6 * sizeof(int);
-    //  const SER_SIZE_MSG_T = ;
-    inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); }; // TODO: check this zise
+    inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); };
 
     const int SAVE_CNT = 10;
-    // int AVERAGE_MSG_BYTESIZE = 72;
     const int INT_VEC_PAIR_DELTA = 100;
     typedef enum message_type
     {
@@ -46,30 +43,14 @@ namespace Pet_kea
         int res_time;
     };
 
-    struct int_vec_pair
-    {
-        int Tj;
-        std::vector<int> fail_v;
-
-        int_vec_pair(int v_size) : fail_v(v_size, 0) {}
-    };
-
     struct ctrl_msg_t
     {
         message_type msg_type;
         int sending_process_nr;
         struct fail_log_t log_entry;
         int recieved_cnt;
-        // struct int_vec_pair *recieved; // TODO:make this a std::set
         std::set<std::pair<int, std::vector<int>>> recvd_msgs;
     };
-
-    // struct ptp_err
-    // {
-    //     pid_t pid;
-    //     int fildes[2];
-    //     struct ctrl_msg_t *msg;
-    // };
 
     struct msg_t
     {
@@ -114,10 +95,26 @@ namespace Pet_kea
         std::vector<std::vector<int>> ck_time_v;
         std::ofstream msg_out;
 
+        /**
+         * @brief Checks if a message is a duplicate message.
+         * @param msg Pointer to a msg_t structure representing the message to be checked.
+         * @return true if if the message is a duplicate, false otherwise.
+         */
         bool check_duplicate(struct msg_t *msg);
 
+        /**
+         * @brief Checks if a message is orphaned.
+         * @param msg Pointer to a msg_t structure representing the message to be checked.
+         * @return true if the message is orphaned, false otherwise.
+         */
         bool check_orphaned(struct msg_t *msg);
 
+        /**
+         * @brief Removes log entries based on provided indices.
+         * @param to_remove Vector containing indices of log entries to be removed.
+         * @param final_index Index of the final log entry in the log structure.
+         * @return New final index
+         */
         int rem_log_entries(std::vector<int> to_remove, int final_index);
 
         /**
@@ -164,19 +161,17 @@ namespace Pet_kea
         int deserialize_log(char *data, struct msg_log_t *log);
 
         /**
-         * @brief Receives a control message.
-         * @param data Pointer to the character array containing the received control message.
-         */
-        void recv_ctrl(struct ctrl_msg_t *c_msg);
-
-        /**
          * @brief Stores a general message.
          * @param msg Pointer to the message structure to be stored.
          * @param recipient -1 if the stored msg is a recieve event, any positive interger for the recipient process_id.
          * @return 0 on success, -1 on failure.
          */
         int store_msg(struct msg_t *msg, int recipient);
-
+        /**
+         * @brief performs a rollback
+         * @param msg Pointer to the  control message structure that activated the rollback
+         * @return 0 on success, -1 on failure.
+         */
         int rollback(struct ctrl_msg_t *msg);
 
     public:
@@ -187,6 +182,7 @@ namespace Pet_kea
          * @brief Constructor for State class.
          * @param process_nr The process number.
          * @param process_cnt The total number of processes.
+         * @param fd The file descriptors from all processes.
          * @param restart Flag indicating whether the process is being restarted.
          */
         State(int process_nr, int process_cnt, int (*fd)[2], bool restart);
@@ -217,7 +213,7 @@ namespace Pet_kea
          * @param fildes Array containing file descriptors of the pipe.
          * @param output Pointer to the buffer where the received message will be stored.
          * @param size Size of the buffer.
-         * @return 0 on success, 1 after recieving a duplicate or orphaned message that was discarded, -1 on failure.
+         * @return 0 on success, 1 after recieving a CTRL msg, 3 after recieving a duplicate or orphaned message that was discarded, 3 after recieving a VOID msg, -1 on failure.
          */
         int recv_msg(int fildes[2], char *output, int size);
 
@@ -227,6 +223,12 @@ namespace Pet_kea
          */
         void send_ctrl();
 
+        /**
+         * @brief updates file descriptors
+         * @param process_id The process id of the file descriptors to be changed.
+         * @param fd The new file descriptors.
+         * @return 0 on success, -1 on failure.
+         */
         int update_fd(int process_id, int fd[2]);
     };
 }

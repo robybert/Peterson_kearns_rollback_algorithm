@@ -251,8 +251,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
             if (buffer.msg_type == MSG)
             {
                 msg_cnt++;
-                // cout << process_nr << " " << buffer.contents.ptp_msg.msg_buf << endl;
-                continue;
+                cout << process_nr << " " << buffer.contents.ptp_msg.msg_buf << endl;
             }
             else if (buffer.msg_type == ERR)
             {
