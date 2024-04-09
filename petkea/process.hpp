@@ -7,6 +7,26 @@
 #define _PROCESS_HPP_
 
 #include <unistd.h>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sys/select.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <csignal>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <time.h>
+
 const int CHILDREN = 3;
 #include "pet-kea.hpp"
 
@@ -46,7 +66,7 @@ struct msg_t
  * @param fildes The file descriptor of the pipes
  * @return Returns 0 for success and -1 for failure
  */
-int make_pipe(int fildes[2]);
+int make_pipe(int fildes[2], int sv[2]);
 
 /**
  * @brief Forks the current process and lets it execute msg_process()
@@ -55,7 +75,7 @@ int make_pipe(int fildes[2]);
  * @param restart Enable if the process needs to send their FD to the other processes
  * @return Returns the pid of the created process, for failure -1
  */
-pid_t fork_process(int process_nr, int fildes[CHILDREN][2], bool restart);
+pid_t fork_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], bool restart);
 
 /**
  * @brief Kills and Restarts the specified process
@@ -64,7 +84,7 @@ pid_t fork_process(int process_nr, int fildes[CHILDREN][2], bool restart);
  * @param fildes The FD of the pipes
  * @return Returns the pid of the newly created process
  */
-pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2]);
+pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2], int sv[CHILDREN][2]);
 
 /**
  * @brief Serializes a message structure into a character array.
@@ -121,6 +141,6 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state);
  * @param fildes The file descriptor of the pipes
  * @param restart Enable if the process needs to send its file descriptors to the other processes
  */
-void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart);
+void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], bool restart);
 
 #endif

@@ -16,6 +16,7 @@
 #include <fstream>
 #include <cstring>
 #include <filesystem>
+#include <bits/stdc++.h>
 
 // using namespace std;
 
@@ -23,9 +24,28 @@ const int MAX_LOG = 500;
 
 // const int STATE_SIZE =
 
+// Hash function
+struct vector_hash
+{
+    size_t operator()(const std::vector<int>
+                          &myVector) const
+    {
+        std::hash<int> hasher;
+        size_t answer = 0;
+
+        for (int i : myVector)
+        {
+            answer ^= hasher(i) + 0x9e3779b9 +
+                      (answer << 6) + (answer >> 2);
+        }
+        return answer;
+    }
+};
+
 namespace Pet_kea
 {
     inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); };
+    const int SER_VOID_SIZE = 2 * sizeof(int);
 
     const int SAVE_CNT = 10;
     const int INT_VEC_PAIR_DELTA = 100;
@@ -41,6 +61,10 @@ namespace Pet_kea
         int id;
         int fail_nr;
         int res_time;
+        fail_log_t() {}
+        fail_log_t(int id, int fail_nr, int res_time) : id(id),
+                                                        fail_nr(fail_nr),
+                                                        res_time(res_time) {}
     };
 
     struct ctrl_msg_t
@@ -60,6 +84,10 @@ namespace Pet_kea
         std::vector<int> fail_v;
         int msg_size;
         char *msg_buf;
+        ~msg_t()
+        {
+            free(msg_buf);
+        }
     };
 
     struct msg_log_t
@@ -71,7 +99,15 @@ namespace Pet_kea
         std::vector<int> time_v_s;
         std::vector<int> time_v_r;
         std::vector<int> fail_v_s;
+        ~msg_log_t()
+        {
+            free(msg_buf);
+        }
     };
+
+    void print_msg(struct msg_t *msg);
+
+    void print_ctrl_msg(struct ctrl_msg_t *msg);
 
     /**
      * @brief Sends data to another process without it being recorded in the state.
@@ -93,6 +129,8 @@ namespace Pet_kea
         int msg_cnt;
         std::vector<int> checkpoints;
         std::vector<std::vector<int>> ck_time_v;
+        std::vector<struct fail_log_t> fail_log;
+        std::unordered_set<std::vector<int>, vector_hash> arrived_msgs;
         std::ofstream msg_out;
 
         /**
@@ -176,6 +214,7 @@ namespace Pet_kea
 
     public:
         const int SER_LOG_SIZE = 3 * sizeof(int) + time_v.size() * 3 * sizeof(int);
+        const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
         const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
         // const int MSG_CHECKPOINT_BYTESYZE = SAVE_CNT * (AVERAGE_MSG_BYTESIZE + (3 + 3 * time_v.size()) * sizeof(int));
         /**
@@ -213,7 +252,7 @@ namespace Pet_kea
          * @param fildes Array containing file descriptors of the pipe.
          * @param output Pointer to the buffer where the received message will be stored.
          * @param size Size of the buffer.
-         * @return 0 on success, 1 after recieving a CTRL msg, 3 after recieving a duplicate or orphaned message that was discarded, 3 after recieving a VOID msg, -1 on failure.
+         * @return 0 on success, 1 after recieving a VOID msg, 2 after recieving a CTRL msg, 3 after recieving a duplicate or orphaned message that was discarded, -1 on failure.
          */
         int recv_msg(int fildes[2], char *output, int size);
 

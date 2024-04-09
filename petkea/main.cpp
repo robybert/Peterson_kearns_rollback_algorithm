@@ -16,18 +16,23 @@ int main(int argc, char const *argv[])
     srand(PARENT_SEED);
 
     int fildes[CHILDREN][2];
+    int sv[CHILDREN][2];
     pid_t c_pid[CHILDREN];
 
     // establish pipes
     for (int i = 0; i < CHILDREN; i++)
     {
-        make_pipe(fildes[i]);
+        make_pipe(fildes[i], sv[i]);
     }
+    int ret;
 
     // fork all child processes
     for (int i = 0; i < CHILDREN; i++)
     {
-        c_pid[i] = fork_process(i, fildes, false);
+        ret = fork_process(i, fildes, sv, false);
+        if (ret == -1)
+            return 0;
+        c_pid[i] = ret;
         cout << "parent created child " << i << " with c_pid " << c_pid[i] << endl;
     }
 
@@ -37,9 +42,9 @@ int main(int argc, char const *argv[])
     this_thread::sleep_for(chrono::seconds(16));
 
     // restart the selected process
-    c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes);
+    c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
 
-    while (1)
+    while (0)
     {
 
         if (c_pid[to_restart] != -1)

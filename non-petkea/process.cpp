@@ -247,6 +247,10 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], bool restart)
         else if (FD_ISSET(fildes[process_nr][0], &ready_fd))
         {
             ret = read(fildes[process_nr][0], data, sizeof(msg_t));
+            if (ret < 0)
+            {
+                // handle error
+            }
             deserialize(data, &buffer);
             if (buffer.msg_type == MSG)
             {
