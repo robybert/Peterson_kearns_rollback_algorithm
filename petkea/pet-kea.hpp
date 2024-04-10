@@ -20,8 +20,6 @@
 
 // using namespace std;
 
-const int MAX_LOG = 500;
-
 // const int STATE_SIZE =
 
 // Hash function
@@ -44,6 +42,7 @@ struct vector_hash
 
 namespace Pet_kea
 {
+    int MAX_LOG = 500;
     inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt, int v_size) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + v_size * sizeof(int))); };
     const int SER_VOID_SIZE = 2 * sizeof(int);
 
