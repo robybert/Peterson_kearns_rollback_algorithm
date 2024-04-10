@@ -54,6 +54,10 @@ char *Pet_kea::State::get_msg(int i)
     return msg_log[i].msg_buf;
 }
 
+/**
+ * Worst Case timecoplexity = O(msg_cnt)
+ * AVerage timecomplexity = O(msg_cnt)
+ */
 char **Pet_kea::State::get_msg_log()
 {
     char **output_log = (char **)malloc(msg_cnt * sizeof(char *));
@@ -65,19 +69,27 @@ char **Pet_kea::State::get_msg_log()
     return output_log;
 }
 
+/**
+ * Worst Case timecoplexity = O(2*process_cnt + size_set_arived msgs)
+ * AVerage timecomplexity = O(2*process_cnt)
+ */
 bool Pet_kea::State::check_duplicate(struct msg_t *msg)
 {
-    vector<int> merged_time_fail_v(msg->time_v.size() + msg->fail_v.size());
-    merge(msg->time_v.begin(), msg->time_v.end(), msg->fail_v.begin(), msg->fail_v.end(), merged_time_fail_v.begin());
-    auto [it, inserted] = arrived_msgs.insert(merged_time_fail_v);
+    vector<int> merged_time_fail_v(msg->time_v.size() + msg->fail_v.size());                                           // O(1)
+    merge(msg->time_v.begin(), msg->time_v.end(), msg->fail_v.begin(), msg->fail_v.end(), merged_time_fail_v.begin()); // WC=O(n1 +n2 -1)
+    auto [it, inserted] = arrived_msgs.insert(merged_time_fail_v);                                                     // WC=O(size) AV=O(1)
     return !(inserted);
 }
 
+/**
+ * Worst Case timecoplexity = O(process_cnt)
+ * AVerage timecomplexity = O(process_cnt)
+ */
 bool Pet_kea::State::check_orphaned(struct msg_t *msg)
 {
-    for (int i = 0; i < (int)fail_log.size(); i++)
+    for (int i = 0; i < (int)fail_log.size(); i++) // O(fail_log.size)
     {
-        if (msg->fail_v[fail_log[i].id] < fail_log[i].fail_nr && msg->time_v[fail_log[i].id] > fail_log[i].res_time)
+        if (msg->fail_v[fail_log[i].id] < fail_log[i].fail_nr && msg->time_v[fail_log[i].id] > fail_log[i].res_time) // O(1)
             return true;
         else
             continue;
@@ -86,6 +98,10 @@ bool Pet_kea::State::check_orphaned(struct msg_t *msg)
     return false;
 }
 
+/**
+ * Worst Case timecoplexity = O(to_remove.size * sizeof(msg_log_t))
+ * AVerage timecomplexity = O(to_remove.size * sizeof(msg_log_t))
+ */
 int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 {
     msg_log_t *src = 0, *dest = 0;
@@ -126,6 +142,10 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
     return final_index;
 }
 
+/**
+ * Worst Case timecoplexity = O(recieved_msgs.size * process_cnt)
+ * AVerage timecomplexity = O(recieved_msgs.size * process_cnt)
+ */
 void Pet_kea::State::serialize_ctrl(struct ctrl_msg_t *msg, char *data)
 {
     int *q = (int *)data;
@@ -157,6 +177,10 @@ void Pet_kea::State::serialize_ctrl(struct ctrl_msg_t *msg, char *data)
     }
 }
 
+/**
+ * Worst Case timecoplexity = O(recieved_cnt * process_cnt)
+ * AVerage timecomplexity = O(recieved_cnt * process_cnt)
+ */
 void Pet_kea::State::deserialize_ctrl(char *data, struct ctrl_msg_t *msg)
 {
     int *q = (int *)data;
@@ -193,6 +217,10 @@ void Pet_kea::State::deserialize_ctrl(char *data, struct ctrl_msg_t *msg)
     }
 }
 
+/**
+ * Worst Case timecoplexity = O(2*process_cnt + msg_size)
+ * AVerage timecomplexity = O(msg_size)
+ */
 void Pet_kea::State::serialize(struct msg_t *msg, char *data)
 {
     int *q = (int *)data;
@@ -221,6 +249,11 @@ void Pet_kea::State::serialize(struct msg_t *msg, char *data)
 
     memcpy(q, msg->msg_buf, msg->msg_size);
 }
+
+/**
+ * Worst Case timecoplexity = O(2*process_cnt +msg_size)
+ * AVerage timecomplexity = O(msg_size)
+ */
 void Pet_kea::State::deserialize(char *data, struct msg_t *msg)
 {
     int *q = (int *)data;
@@ -251,6 +284,10 @@ void Pet_kea::State::deserialize(char *data, struct msg_t *msg)
     memcpy(msg->msg_buf, q, msg->msg_size);
 }
 
+/**
+ * Worst Case timecoplexity = O(3*process_cnt + msg_size)
+ * AVerage timecomplexity = O(3*process_cnt + msg_size)
+ */
 void Pet_kea::State::serialize_log(struct msg_log_t *log, char *data)
 {
     int *q = (int *)data;
@@ -281,6 +318,11 @@ void Pet_kea::State::serialize_log(struct msg_log_t *log, char *data)
 
     memcpy(q, log->msg_buf, log->msg_size);
 }
+
+/**
+ * Worst Case timecoplexity = O(3*process_cnt + msg_size)
+ * AVerage timecomplexity = O(3*process_cnt + msg_size)
+ */
 int Pet_kea::State::deserialize_log(char *data, struct msg_log_t *log)
 {
     int *q = (int *)data;
@@ -315,15 +357,19 @@ int Pet_kea::State::deserialize_log(char *data, struct msg_log_t *log)
     return (q - (int *)data) * sizeof(int) + log->msg_size;
 }
 
+/**
+ * Worst Case timecoplexity = O(process_cnt*(recieved_msgs.size * process_cnt) + msg_cnt*log(recvd_msgs.size))
+ * AVerage timecomplexity = O(process_cnt*(recieved_msgs.size * process_cnt) + msg_cnt*log(recvd_msgs.size))
+ */
 void Pet_kea::State::send_ctrl()
 {
-    set<pair<int, std::vector<int>>> recvd_msgs[time_v.size()];
+    set<pair<int, std::vector<int>>> recvd_msgs[time_v.size()]; // init=O(process_cnt)
 
     vector<int> cnt(time_v.size(), 0);
     struct fail_log_t fail_log = {id, fail_v[id], time_v[id]};
 
     pair<int, vector<int>> temp_pair;
-    for (int i = 0; i < msg_cnt; i++)
+    for (int i = 0; i < msg_cnt; i++) // O(msg_cnt)
     {
         if (!msg_log[i].recipient)
         {
@@ -332,11 +378,11 @@ void Pet_kea::State::send_ctrl()
 
         temp_pair.first = msg_log[i].time_v_sender[msg_log[i].process_id];
         temp_pair.second = msg_log[i].fail_v_sender;
-        recvd_msgs[msg_log[i].process_id].insert(temp_pair);
+        recvd_msgs[msg_log[i].process_id].insert(temp_pair); // O(log(recvd_msgs.size))
         cnt[msg_log[i].process_id]++;
     }
 
-    for (int i = 0; i < (int)time_v.size(); i++)
+    for (int i = 0; i < (int)time_v.size(); i++) // O(process_cnt)
     {
         // prepare and send the ctrl messages
         if (i == id)
@@ -353,7 +399,7 @@ void Pet_kea::State::send_ctrl()
         // send the control message (serialize)
         size_t size = SER_SIZE_CTRL_MSG_T(msg.recieved_cnt, fail_v.size());
         char *data = (char *)malloc(size);
-        serialize_ctrl(&msg, data);
+        serialize_ctrl(&msg, data); // O(recieved_msgs.size * process_cnt)
 
         int ret = write(fildes[i][1], data, size);
         if (ret < 0)
@@ -365,6 +411,10 @@ void Pet_kea::State::send_ctrl()
     }
 }
 
+/**
+ * Worst Case timecoplexity = O(msg_size + 3*process_cnt) + O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))
+ * AVerage timecomplexity = O(msg_size + 3*process_cnt)
+ */
 int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
 {
     // store the message
@@ -399,11 +449,15 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
 
     msg_cnt++;
     if (msg_cnt % SAVE_CNT == 0)
-        checkpoint();
+        checkpoint(); // O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))
 
     return 0;
 }
 
+/**
+ * Worst Case timecoplexity = O(numcheckpoints + to_remove + bytes_to_remove +msg_cnt*(3*msg_size + 4*processcnt)) + O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size)) + 2 * O(to_remove.size * sizeof(msg_log_t))
+ * AVerage timecomplexity = O(numcheckpoints + to_remove + bytes_to_remove +msg_cnt*(3*msg_size + 4*processcnt)) + O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))+ 2 * O(to_remove.size * sizeof(msg_log_t))
+ */
 int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 {
     cout << "entered the rollback section" << endl;
@@ -415,12 +469,12 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         //  RB.2.1      remove ckeckpoints T^i > crT^i, set state and T to latest ckeckpoint, replays
         int prev_cnt = msg_cnt, to_remove = 0, size = ck_time_v.size() - 1, checkpoint_T_i = ck_time_v.back().at(msg->sending_process_nr);
 
-        while (checkpoint_T_i > msg->log_entry.res_time)
+        while (checkpoint_T_i > msg->log_entry.res_time) // O(num_checkpoints)
         {
             checkpoint_T_i = ck_time_v.at(size - to_remove).at(msg->sending_process_nr);
             to_remove++;
         }
-        if (to_remove > 1)
+        if (to_remove > 1) // O(to_remove)
         {
             to_remove--;
 
@@ -452,7 +506,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         // replay messages
         std::vector<int> indices_to_rem;
 
-        for (int i = msg_cnt; i < prev_cnt; i++)
+        for (int i = msg_cnt; i < prev_cnt; i++) // O(prev_cnt-msg_cnt)
         {
             if (msg_log[i].time_v_sender[msg->sending_process_nr] <= msg->log_entry.res_time && msg_log[i].time_v_sender[id] >= ck_time_v.back()[id])
             {
@@ -487,7 +541,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         }
         if (!indices_to_rem.empty())
         {
-            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt);
+            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt); // O(to_remove.size * sizeof(msg_log_t))
             indices_to_rem.clear();
         }
 
@@ -508,7 +562,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 
         // RB.3
 
-        for (int i = 0; i < prev_cnt; i++) // TODO: check if you have to go from the beginning
+        for (int i = 0; i < prev_cnt; i++) // O(msg_cnt*(2*msg_cnt +4*process_cnt) or msg_cnt*(3*msg_size + 4*processcnt))
         {
             // move recv event to the back??? TODO: ask if this is what is meant with RB.3.2
             if (msg_log[i].recipient && msg_log[i].time_v_reciever[msg->sending_process_nr] > msg->log_entry.res_time)
@@ -524,17 +578,17 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
                 msg_log[msg_cnt].msg_size = msg_log[i].msg_size;
                 msg_log[msg_cnt].recipient = true;
                 msg_log[msg_cnt].process_id = msg_log[i].process_id;
-                msg_log[msg_cnt].msg_buf = (char *)malloc(msg_log[i].msg_size);
-                memcpy(msg_log[msg_cnt].msg_buf, msg_log[i].msg_buf, msg_log[i].msg_size);
+                msg_log[msg_cnt].msg_buf = (char *)malloc(msg_log[i].msg_size);            // O(msg_size)
+                memcpy(msg_log[msg_cnt].msg_buf, msg_log[i].msg_buf, msg_log[i].msg_size); // O(msg_size)
 
-                msg_log[msg_cnt].time_v_sender = msg_log[i].time_v_sender;
-                msg_log[msg_cnt].fail_v_sender = msg_log[i].fail_v_sender;
-                msg_log[msg_cnt].time_v_reciever = msg_log[i].time_v_reciever;
+                msg_log[msg_cnt].time_v_sender = msg_log[i].time_v_sender;     // O(process_cnt)
+                msg_log[msg_cnt].fail_v_sender = msg_log[i].fail_v_sender;     // O(process_cnt)
+                msg_log[msg_cnt].time_v_reciever = msg_log[i].time_v_reciever; // O(process_cnt)
 
                 msg_cnt++;
 
                 time_v[id]++;
-                for (int j = 0; j < (int)time_v.size(); j++)
+                for (int j = 0; j < (int)time_v.size(); j++) // O(process_cnt)
                 {
                     if (j == id)
                         continue;
@@ -558,14 +612,14 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
                 struct msg_t retransmit_msg;
                 retransmit_msg.msg_type = MSG;
                 retransmit_msg.sending_process_nr = id;
-                retransmit_msg.time_v = msg_log[i].time_v_sender;
-                retransmit_msg.fail_v = msg_log[i].fail_v_sender;
+                retransmit_msg.time_v = msg_log[i].time_v_sender; // O(process_cnt)
+                retransmit_msg.fail_v = msg_log[i].fail_v_sender; // O(process_cnt)
                 retransmit_msg.msg_size = msg_log[i].msg_size;
-                retransmit_msg.msg_buf = (char *)malloc(retransmit_msg.msg_size * sizeof(char));
-                memcpy(retransmit_msg.msg_buf, msg_log[i].msg_buf, retransmit_msg.msg_size);
+                retransmit_msg.msg_buf = (char *)malloc(retransmit_msg.msg_size * sizeof(char)); // O(msg_size)
+                memcpy(retransmit_msg.msg_buf, msg_log[i].msg_buf, retransmit_msg.msg_size);     // O(msg_size)
 
                 char data[SER_MSG_SIZE + msg_log[i].msg_size];
-                serialize(&retransmit_msg, data);
+                serialize(&retransmit_msg, data); // O(2*process_cnt + msg_size)
 
                 // send the message
                 if (write(fildes[msg_log[i].process_id][1], data, SER_MSG_SIZE + msg_log[i].msg_size) < 0)
@@ -578,14 +632,18 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         {
             prev_cnt = msg_cnt;
             msg_cnt -= indices_to_rem.size();
-            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt);
+            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt); // O(to_remove.size * sizeof(msg_log_t))
         }
 
-        checkpoint();
+        checkpoint(); // O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))
     }
     return 0;
 }
 
+/**
+ * Restart timecoplexity = O(process_cnt + filesize_msg_file + num_checpoints* *(process_cnt + msgs_per_checkpoint*(3*process_cnt + msg_size)) +filesize_fail_file)
+ * AVerage timecomplexity = O(1)
+ */
 Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restart) : id(process_nr),
                                                                                      time_v(process_cnt, 0),
                                                                                      fail_v(process_cnt, 0),
@@ -594,7 +652,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
 
 {
     fildes = (int **)malloc(process_cnt * sizeof(int *));
-    for (int i = 0; i < process_cnt; i++)
+    for (int i = 0; i < process_cnt; i++) // O(process_cnt)
     {
         fildes[i] = (int *)malloc(2 * sizeof(int));
         fildes[i][0] = fd[i][0];
@@ -614,8 +672,6 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
 
         int *curr_pos = (int *)msg_file;
 
-        // msg_in.read((char *)update, sizeof(int) * 4);
-
         id = *curr_pos;
         curr_pos++;
         msg_cnt = *curr_pos;
@@ -623,29 +679,16 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
         curr_pos++;
         int num_checkpoints = *curr_pos;
         curr_pos++;
-        // free(update);
-        // update = (int *)malloc(time_v.size() * sizeof(int));
 
-        // msg_in.read((char *)update, time_v.size() * sizeof(int));
-        for (int i = 0; i < (int)time_v.size(); i++)
+        for (int i = 0; i < (int)time_v.size(); i++) // O(process_cnt)
         {
             time_v[i] = *curr_pos;
             curr_pos++;
         }
-        // free(update - time_v.size());
-
-        // TODO: change this to accomodate for changeable size
-        // int begin_log = msg_in.tellg();
-        // msg_in.seekg(0, msg_in.end);
-        // int end_log = msg_in.tellg();
-
-        // msg_in.seekg(begin_log, ifstream::beg);
-
         msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
-        // char log_buffer[end_log];
-        // msg_in.read(log_buffer, end_log);
+
         int read_msg_cnt = 0;
-        for (int i = 0; i < num_checkpoints; i++)
+        for (int i = 0; i < num_checkpoints; i++) // O(numcheckpoints*(process_cnt + msgs_per_checkpoint*(3*process_cnt + msg_size))
         {
             curr_pos++;
             int ck_msg_cnt = *curr_pos;
@@ -664,7 +707,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
 
             for (int k = 0, ret = 0; k < to_read; k++, read_msg_cnt++)
             {
-                ret = deserialize_log((char *)curr_pos, &msg_log[read_msg_cnt]);
+                ret = deserialize_log((char *)curr_pos, &msg_log[read_msg_cnt]); // O(3*process_cnt + msg_size)
                 curr_pos += ret / sizeof(int);
             }
         }
@@ -683,7 +726,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
             }
         }
 
-        msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::app); // TODO: this is where .dat files get cleared
+        msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::app);
         get_fail_filename(id, filename);
         ifstream fail_in(filename, ifstream::in | ifstream::binary);
 
@@ -693,7 +736,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
         char fail_file[file_size];
         fail_in.read(fail_file, file_size);
         fail_in.close();
-        // TODO: wrtie failure log recovery
+
         curr_pos = (int *)fail_file;
         fail_log_t temp_fail_log;
         while (curr_pos < (int *)(fail_file + file_size))
@@ -739,6 +782,10 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
     }
 }
 
+/**
+ * Worst Case timecoplexity = O(msg_cnt + process_cnt)
+ * AVerage timecomplexity = O(msg_cnt + process_cnt)
+ */
 Pet_kea::State::~State()
 {
     for (int i = msg_cnt - 1; i >= 0; i--)
@@ -760,6 +807,11 @@ Pet_kea::State::~State()
     msg_out.close();
 }
 
+/**
+ * Worst Case timecoplexity = O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))
+ * AVerage timecomplexity = O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))
+ */
+
 int Pet_kea::State::checkpoint()
 {
     // write state and time vector at the start of the file
@@ -779,8 +831,8 @@ int Pet_kea::State::checkpoint()
     msg_out.seekp(0, ofstream::beg);
     msg_out.write((char *)update, sizeof(int) * 4);
 
-    int *time_v_buffer = (int *)malloc(sizeof(int) * time_v.size());
-    for (int i = 0; i < (int)time_v.size(); i++)
+    int *time_v_buffer = (int *)malloc(sizeof(int) * time_v.size()); // O(process_cnt)
+    for (int i = 0; i < (int)time_v.size(); i++)                     // O(process_cnt)
     {
         time_v_buffer[i] = time_v[i];
     }
@@ -793,18 +845,14 @@ int Pet_kea::State::checkpoint()
     msg_out.write((char *)update, sizeof(int) * 3);
     free(update);
 
-    // for (int i = 0; i < (int)time_v.size(); i++)
-    // {
-    //     time_v_buffer[i] = time_v[i];
-    // }
     msg_out.write((char *)time_v_buffer, sizeof(int) * time_v.size());
 
     free(time_v_buffer);
 
-    for (int i = checkpoints.back(); i < msg_cnt; i++)
+    for (int i = checkpoints.back(); i < msg_cnt; i++) // O(msgs_since_last_checkpoint)
     {
         char data[msg_log[i].msg_size + log_size];
-        serialize_log(&msg_log[i], data);
+        serialize_log(&msg_log[i], data); // O(3*process_cnt + msg_size)
         msg_out.write(data, msg_log[i].msg_size + log_size);
     }
     checkpoints.push_back(msg_cnt);
@@ -814,6 +862,10 @@ int Pet_kea::State::checkpoint()
     return 0;
 }
 
+/**
+ * Worst Case timecoplexity = O(size)
+ * AVerage timecomplexity = O(size)
+ */
 int Pet_kea::send_void(char *input, int fildes[2], int size)
 {
     char data[SER_VOID_SIZE + size];
@@ -833,6 +885,10 @@ int Pet_kea::send_void(char *input, int fildes[2], int size)
     return 0;
 }
 
+/**
+ * Worst Case timecoplexity = O(2*size) + O(2*process_cnt +msg_size) + O(msg_size + 3*process_cnt) + O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))
+ * AVerage timecomplexity = O(2*size) + O(2*process_cnt +msg_size) + O(msg_size + 3*process_cnt)
+ */
 int Pet_kea::State::send_msg(char *input, int process_id, int size)
 {
     // inc T^i
@@ -849,7 +905,7 @@ int Pet_kea::State::send_msg(char *input, int process_id, int size)
     memcpy(msg.msg_buf, input, size * sizeof(char));
 
     char data[SER_MSG_SIZE + size];
-    serialize(&msg, data);
+    serialize(&msg, data); // O(2*process_cnt +msg_size)
 
     // send the message
     try
@@ -864,11 +920,15 @@ int Pet_kea::State::send_msg(char *input, int process_id, int size)
         return -1;
     }
 
-    store_msg(&msg, process_id);
+    store_msg(&msg, process_id); // O(msg_size + 3*process_cnt)
 
     return 0;
 }
 
+/**
+ * Worst Case timecoplexity = O(msg_size + process_cnt) + O(2*process_cnt +msg_size) + O(2*process_cnt + size_set_arived msgs) + O(process_cnt) + O(msg_size + 3*process_cnt) + O(2*process_cnt + msgs_since_last_checkpoint*(3*process_cnt + msg_size))
+ * AVerage timecomplexity = O(msg_size + process_cnt) + O(2*process_cnt +msg_size) + O(2*process_cnt + size_set_arived msgs) + O(process_cnt) +  O(msg_size + 3*process_cnt)
+ */
 int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 {
     // read message
@@ -877,9 +937,9 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 
     try
     {
-        char *extra_data, *data = (char *)malloc(SER_MSG_SIZE + size * sizeof(char)); // TODO: check size
+        char *extra_data, *data = (char *)malloc(SER_MSG_SIZE + size * sizeof(char));
         extra_data = data;
-        ret = read(fildes[0], data, init_read_size); // TODO: check size
+        ret = read(fildes[0], data, init_read_size);
         // do err checking
         if (ret < 0)
         {
@@ -932,15 +992,15 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 
         ret = read(fildes[0], extra_data, SER_MSG_SIZE + size - init_read_size);
         struct msg_t msg;
-        deserialize(data, &msg);
+        deserialize(data, &msg); // O(2*process_cnt +msg_size)
         free(data);
 
-        if (check_duplicate(&msg))
+        if (check_duplicate(&msg)) // O(2*process_cnt + size_set_arived msgs)
         {
             return 3;
         }
 
-        if (check_orphaned(&msg))
+        if (check_orphaned(&msg)) // O(process_cnt)
         {
             return 3;
         }
@@ -955,9 +1015,9 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 
         // inc T^i and inc T^/j to max(T^j of send event, prev event T^j)
 
-        store_msg(&msg, -1);
+        store_msg(&msg, -1); // O(msg_size + 3*process_cnt)
 
-        memcpy(output, msg.msg_buf, msg.msg_size);
+        memcpy(output, msg.msg_buf, msg.msg_size); // O(msg_size)
     }
     catch (const std::exception &e)
     {
@@ -968,6 +1028,10 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
     return 0;
 }
 
+/**
+ * Worst Case timecoplexity = O(1)
+ * AVerage timecomplexity = O(1)
+ */
 int Pet_kea::State::update_fd(int process_id, int fd[2])
 {
     if (process_id < 0 || process_id >= (int)time_v.size())
