@@ -48,7 +48,6 @@ namespace Pet_kea
     const int SER_VOID_SIZE = 2 * sizeof(int);
 
     const int SAVE_CNT = 10;
-    const int INT_VEC_PAIR_DELTA = 100;
     typedef enum message_type
     {
         MSG,
@@ -73,7 +72,7 @@ namespace Pet_kea
         int sending_process_nr;
         struct fail_log_t log_entry;
         int recieved_cnt;
-        std::set<std::pair<int, std::vector<int>>> recvd_msgs;
+        std::set<std::pair<int, std::vector<int>>> recieved_msgs;
     };
 
     struct msg_t
@@ -96,17 +95,27 @@ namespace Pet_kea
         bool recipient;
         int process_id;
         char *msg_buf;
-        std::vector<int> time_v_s;
-        std::vector<int> time_v_r;
-        std::vector<int> fail_v_s;
+        std::vector<int> time_v_sender;
+        std::vector<int> time_v_reciever;
+        std::vector<int> fail_v_sender;
         ~msg_log_t()
         {
             free(msg_buf);
         }
     };
 
+    /**
+     * @brief Prints the contents of a message.
+     * This function prints the contents of a message struct, including message type, sending process number, time vector, failure vector, message size.
+     * @param msg Pointer to the message struct to be printed.
+     */
     void print_msg(struct msg_t *msg);
 
+    /**
+     * @brief Prints the contents of a control message.
+     * This function prints the contents of a control message struct, including message type, sending process number, log entry, received count, and received messages.
+     * @param msg Pointer to the control message struct to be printed.
+     */
     void print_ctrl_msg(struct ctrl_msg_t *msg);
 
     /**
@@ -230,6 +239,21 @@ namespace Pet_kea
          * @brief Destructor for State class.
          */
         ~State();
+
+        /**
+         * @brief Retrieves a message buffer.
+         * This function retrieves the message buffer at the specified index `i`.
+         * @param i Index of the message buffer to retrieve.
+         * @return Pointer to the message buffer.
+         */
+        char *get_msg(int i);
+
+        /**
+         * @brief Retrieves the message log.
+         * This function retrieves the message log, which is an array of message buffers.
+         * @return Pointer to an array of message buffers.
+         */
+        char **get_msg_log();
 
         /**
          * @brief Creates a checkpoint of the process state and the recieved messages.
