@@ -4,6 +4,17 @@
 using namespace std;
 
 bool is_active;
+const int MSGS_TO_SEND = 500;
+const int MSGS_TO_RECV = 500;
+const int ROLLBACKS_TO_PERFORM = 5;
+
+int send_cnt = 0;
+int recv_cnt = 0;
+
+int64_t send_duration_arr[MSGS_TO_SEND];
+int64_t recv_duration_arr[MSGS_TO_RECV];
+int64_t rollback_duration_arr[ROLLBACKS_TO_PERFORM];
+int64_t msg_cnt_during_rollback[ROLLBACKS_TO_PERFORM];
 
 static void wyslij(int sending_process_nr, int socket, int fd) // send fd by socket
 {
@@ -256,8 +267,23 @@ void deserialize(char *data, struct msg_t *msg)
 int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
 {
     char input[sizeof(msg_t)];
+    int ret;
     serialize(msg, input);
-    int ret = state->send_msg(input, process_id, sizeof(msg_t));
+
+    if (send_cnt < MSGS_TO_SEND)
+    {
+        auto start = chrono::high_resolution_clock::now();
+        ret = state->send_msg(input, process_id, sizeof(msg_t));
+        auto stop = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+        send_duration_arr[send_cnt] = duration.count();
+        send_cnt++;
+    }
+    else
+    {
+        ret = state->send_msg(input, process_id, sizeof(msg_t));
+    }
+
     if (ret < 0)
     {
         perror("write to pipe");
@@ -269,9 +295,20 @@ int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
 int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
 {
     char output[sizeof(msg_t)];
-
-    int ret = state->recv_msg(fildes, output, sizeof(msg_t));
-
+    int ret;
+    if (recv_cnt < MSGS_TO_RECV)
+    {
+        auto start = chrono::high_resolution_clock::now();
+        ret = state->recv_msg(fildes, output, sizeof(msg_t));
+        auto stop = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+        recv_duration_arr[recv_cnt] = duration.count();
+        recv_cnt++;
+    }
+    else
+    {
+        ret = state->recv_msg(fildes, output, sizeof(msg_t));
+    }
     if (ret < 0)
     {
         perror("read from pipe");
@@ -385,9 +422,42 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             // TODO: err checking
         }
         sleep(1);
-        if (!is_active || msg_nr == 300)
+        if (!is_active || msg_nr == MSGS_TO_SEND + 50)
         {
             sleep(process_nr);
+            char send_timing[32];
+            sprintf(send_timing, "send_timing_process_%d.csv", process_nr);
+            ofstream send_out(send_timing, ofstream::out | ofstream::app | ofstream::binary);
+            for (size_t i = 0; i < MSGS_TO_SEND; i++)
+            {
+                send_out << send_duration_arr[i] << ", ";
+            }
+            send_out << "\n";
+
+            send_out.close();
+            char recv_timing[32];
+            sprintf(recv_timing, "recv_timing_process_%d.csv", process_nr);
+            ofstream recv_out(recv_timing, ofstream::out | ofstream::app | ofstream::binary);
+            for (size_t i = 0; i < MSGS_TO_RECV; i++)
+            {
+                recv_out << recv_duration_arr[i] << ",";
+            }
+            recv_out << "\n";
+            recv_out.close();
+            char rollback_timing[32];
+            sprintf(rollback_timing, "send_timing_process_%d.csv", process_nr);
+            ofstream rollback_out(rollback_timing, ofstream::out | ofstream::app | ofstream::binary);
+            for (size_t i = 0; i < MSGS_TO_SEND; i++)
+            {
+                rollback_out << rollback_duration_arr[i] << ",";
+            }
+            rollback_out << "\n";
+            for (size_t i = 0; i < MSGS_TO_SEND; i++)
+            {
+                rollback_out << msg_cnt_during_rollback[i] << ",";
+            }
+            rollback_out << "\n";
+            rollback_out.close();
             return;
         }
     }
