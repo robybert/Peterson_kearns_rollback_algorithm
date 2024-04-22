@@ -1,3 +1,4 @@
 fix error checking with try catch\
 
 read/write for sending make non blocking ?????
+maybe limit the writesize of rem_checkpoints

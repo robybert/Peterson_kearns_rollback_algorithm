@@ -52,7 +52,11 @@ namespace Pet_kea
     {
         MSG,
         CTRL,
-        VOID
+        VOID,
+        COMM1,
+        COMM2,
+        COMM3,
+        COMM4
     } msg_type;
 
     struct fail_log_t
@@ -64,6 +68,17 @@ namespace Pet_kea
         fail_log_t(int id, int fail_nr, int res_time) : id(id),
                                                         fail_nr(fail_nr),
                                                         res_time(res_time) {}
+    };
+
+    struct comm_msg_t
+    {
+        message_type msg_type;
+        int sending_process_nr;
+
+        int time_v_j;
+        std::vector<int> time_v_min;
+        int committed_cnt;
+        std::set<std::pair<std::vector<int>, std::vector<int>>> committed_msgs;
     };
 
     struct ctrl_msg_t
@@ -98,6 +113,7 @@ namespace Pet_kea
         std::vector<int> time_v_sender;
         std::vector<int> time_v_reciever;
         std::vector<int> fail_v_sender;
+        int next_checkpoint;
         ~msg_log_t()
         {
             free(msg_buf);
@@ -136,10 +152,14 @@ namespace Pet_kea
         int **fildes;
         msg_log_t *msg_log;
         int msg_cnt;
+        int commit_cnt;
+        int remove_cnt;
         std::vector<int> checkpoints;
         std::vector<std::vector<int>> ck_time_v;
+        std::vector<int> time_v_min;
         std::vector<struct fail_log_t> fail_log;
         std::unordered_set<std::vector<int>, vector_hash> arrived_msgs;
+        std::set<std::pair<std::vector<int>, std::vector<int>>> committed_msg_set;
         std::ofstream msg_out;
 
         /**
@@ -163,6 +183,13 @@ namespace Pet_kea
          * @return New final index
          */
         int rem_log_entries(std::vector<int> to_remove, int final_index);
+
+        void rem_checkpoints(std::vector<int> to_remove);
+        int *next_checkpoint(int *ptr);
+
+        void serialize_commit(struct comm_msg_t *msg, char *data);
+
+        void deserialize_commit(char *data, struct comm_msg_t *msg);
 
         /**
          * @brief Serializes a control message structure into a character array.
@@ -214,6 +241,9 @@ namespace Pet_kea
          * @return 0 on success, -1 on failure.
          */
         int store_msg(struct msg_t *msg, int recipient);
+
+        int commit_msg(struct msg_log_t *msg);
+
         /**
          * @brief performs a rollback
          * @param msg Pointer to the  control message structure that activated the rollback
@@ -223,6 +253,10 @@ namespace Pet_kea
 
     public:
         const int SER_LOG_SIZE = 3 * sizeof(int) + time_v.size() * 3 * sizeof(int);
+        const int SER_COMM1_SIZE = 3 * sizeof(int);
+        const int SER_COMM2_SIZE = 3 * sizeof(int);
+        int SER_COMM3_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) + (3 + time_v.size()) * sizeof(int); };
+        int SER_COMM4_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int); };
         const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
         const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
         // const int MSG_CHECKPOINT_BYTESYZE = SAVE_CNT * (AVERAGE_MSG_BYTESIZE + (3 + 3 * time_v.size()) * sizeof(int));
@@ -261,6 +295,14 @@ namespace Pet_kea
          */
         int checkpoint();
 
+        int remove_data();
+
+        int signal_commit();
+
+        int send_commit(int target_id);
+
+        int commit(bool is_instigator);
+
         /**
          * @brief Sends a message to another process that will be recorded in the state.
          *
@@ -270,6 +312,8 @@ namespace Pet_kea
          * @return Number of bytes sent on success, -1 on failure.
          */
         int send_msg(char *input, int process_id, int size);
+
+        int recv_commit();
 
         /**
          * @brief Receives a message from another process

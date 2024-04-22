@@ -385,7 +385,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             // TODO: err checking
         }
         sleep(1);
-        if (!is_active || msg_nr == 300)
+        if (!is_active || msg_nr == 50)
         {
             sleep(process_nr);
             return;
