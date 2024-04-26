@@ -118,6 +118,21 @@ namespace Pet_kea
         {
             free(msg_buf);
         }
+        msg_log_t &operator=(const msg_log_t &other)
+        {
+            if (this != &other)
+            {
+                msg_size = other.msg_size;
+                recipient = other.recipient;
+                process_id = other.process_id;
+                msg_buf = other.msg_buf;
+                time_v_sender = other.time_v_sender;
+                time_v_reciever = other.time_v_reciever;
+                fail_v_sender = other.fail_v_sender;
+                next_checkpoint = other.next_checkpoint;
+            }
+            return *this;
+        }
     };
 
     /**

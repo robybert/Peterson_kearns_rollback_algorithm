@@ -246,44 +246,65 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
 
 int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 {
-    cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
-    msg_log_t *src = 0, *dest = 0;
-    int move_cnt = 0;
-    for (int i = to_remove.size(), j = final_index; i > 0;)
-    {
-        if (j == to_remove.back())
-        {
-            // advance dest
-            to_remove.pop_back();
-            i--;
-            final_index--;
-            dest = &msg_log[j];
-            free(msg_log[j].msg_buf);
-            vector<int>().swap(msg_log[j].time_v_reciever);
-            vector<int>().swap(msg_log[j].time_v_sender); // TODO: double free
-            vector<int>().swap(msg_log[j].fail_v_sender);
-        }
-        else
-        {
-            if (src != dest && src != 0)
-            {
-                memmove(dest, src, sizeof(msg_log_t) * move_cnt);
-            }
+    msg_log_t *new_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
 
-            // set src and dest to j
-            src = &msg_log[j];
-            dest = src;
-            move_cnt++;
-        }
-        j--;
-    }
-    if (src != dest && src != 0)
+    vector<int>::iterator curr = to_remove.begin();
+    int new_final_index = 0;
+    for (int i = 0; i < msg_cnt; i++)
     {
-        memmove(dest, src, sizeof(msg_log_t) * move_cnt);
+        if (i == *curr)
+        {
+            curr++;
+            continue;
+        }
+        new_log[new_final_index] = msg_log[i];
+        new_final_index++;
     }
-    cout << id << " new msg_cnt:" << final_index << endl;
-    return final_index;
+    free(msg_log);
+    msg_log = new_log;
+    return new_final_index;
 }
+
+// int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
+// {
+//     cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
+//     msg_log_t *src = 0, *dest = 0;
+//     int move_cnt = 0;
+//     for (int i = to_remove.size(), j = final_index; i > 0;)
+//     {
+//         if (j == to_remove.back())
+//         {
+//             // advance dest
+//             to_remove.pop_back();
+//             i--;
+//             final_index--;
+//             dest = &msg_log[j];
+//             free(msg_log[j].msg_buf);
+//             vector<int>().swap(msg_log[j].time_v_reciever);
+//             vector<int>().swap(msg_log[j].time_v_sender); // TODO: double free
+//             vector<int>().swap(msg_log[j].fail_v_sender);
+//         }
+//         else
+//         {
+//             if (src != dest && src != 0)
+//             {
+//                 memmove(dest, src, sizeof(msg_log_t) * move_cnt);
+//             }
+
+//             // set src and dest to j
+//             src = &msg_log[j];
+//             dest = src;
+//             move_cnt++;
+//         }
+//         j--;
+//     }
+//     if (src != dest && src != 0)
+//     {
+//         memmove(dest, src, sizeof(msg_log_t) * move_cnt);
+//     }
+//     cout << id << " new msg_cnt:" << final_index << endl;
+//     return final_index;
+// }
 
 void Pet_kea::State::serialize_commit(struct comm_msg_t *msg, char *data)
 {
