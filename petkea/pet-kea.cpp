@@ -246,7 +246,7 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
 
 int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 {
-	cout << id << " old msg_cnt:" << final_index << " removing:" <<to_remove.size()<<endl;
+    cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
     msg_log_t *src = 0, *dest = 0;
     int move_cnt = 0;
     for (int i = to_remove.size(), j = final_index; i > 0;)
@@ -281,7 +281,7 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
     {
         memmove(dest, src, sizeof(msg_log_t) * move_cnt);
     }
-	cout << id << " new msg_cnt:" << final_index << endl;
+    cout << id << " new msg_cnt:" << final_index << endl;
     return final_index;
 }
 
@@ -667,14 +667,14 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
     {
         msg_log[msg_cnt].time_v_sender = msg->time_v;
         msg_log[msg_cnt].fail_v_sender = msg->fail_v;
-        //msg_log[msg_cnt].time_v_reciever = time_v;
+        // msg_log[msg_cnt].time_v_reciever = time_v;
         msg_log[msg_cnt].process_id = msg->sending_process_nr;
         msg_log[msg_cnt].recipient = true;
     }
     else
     {
         msg_log[msg_cnt].time_v_sender = time_v;
-	//msg_log[msg_cnt].time_v_reciever = time_v;
+        // msg_log[msg_cnt].time_v_reciever = time_v;
         msg_log[msg_cnt].fail_v_sender = fail_v;
         msg_log[msg_cnt].process_id = recipient;
         msg_log[msg_cnt].recipient = false;
@@ -1040,11 +1040,11 @@ Pet_kea::State::~State()
 {
     for (int i = msg_cnt - 1; i >= 0; i--)
     {
-	//if (msg_log[i].recipient)
+        // if (msg_log[i].recipient)
         //	std::vector<int>().swap(msg_log[i].time_v_reciever);
 
-       //  std::vector<int>().swap(msg_log[i].time_v_sender);
-       //  std::vector<int>().swap(msg_log[i].fail_v_sender);
+        //  std::vector<int>().swap(msg_log[i].time_v_sender);
+        //  std::vector<int>().swap(msg_log[i].fail_v_sender);
 
         free(msg_log[i].msg_buf);
     }
