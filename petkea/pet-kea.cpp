@@ -252,7 +252,7 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
     int new_final_index = 0;
     for (int i = 0; i < msg_cnt; i++)
     {
-        if (i == *curr)
+        if (curr != to_remove.end() && i == *curr)
         {
             curr++;
             free(msg_log[i].msg_buf);
