@@ -246,6 +246,7 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
 
 int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 {
+	cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
     msg_log_t *new_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
 
     vector<int>::iterator curr = to_remove.begin();
@@ -263,9 +264,13 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
         }
         new_log[new_final_index] = msg_log[i];
         new_final_index++;
+	vector<int>().swap(msg_log[i].time_v_reciever);
+        vector<int>().swap(msg_log[i].time_v_sender); // TODO: double free
+        vector<int>().swap(msg_log[i].fail_v_sender);
     }
     free(msg_log);
     msg_log = new_log;
+	cout << id << " new msg_cnt:" << new_final_index << endl;
     return new_final_index;
 }
 

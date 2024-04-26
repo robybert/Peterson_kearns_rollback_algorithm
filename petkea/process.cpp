@@ -377,7 +377,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         buffer.sending_process_nr = process_nr;
         memset(buffer.ptp_msg.msg, 0, 64);
         sprintf(buffer.ptp_msg.msg, "message number %d from process %d to process %d", msg_nr++, process_nr, dest_process_nr);
-        if (msg_nr <= 250)
+        if (msg_nr <= 150)
         {
             ret = send_msg(&buffer, dest_process_nr, &state);
             if (ret == -1)
@@ -392,7 +392,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             state.signal_commit();
         }
 
-        if (!is_active || msg_nr == 260)
+        if (!is_active || msg_nr == 160)
         {
             sleep(process_nr);
             return;
