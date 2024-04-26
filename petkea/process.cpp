@@ -377,20 +377,21 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         buffer.sending_process_nr = process_nr;
         memset(buffer.ptp_msg.msg, 0, 64);
         sprintf(buffer.ptp_msg.msg, "message number %d from process %d to process %d", msg_nr++, process_nr, dest_process_nr);
-
-        ret = send_msg(&buffer, dest_process_nr, &state);
-        if (ret == -1)
-        {
-            is_busy[dest_process_nr] = true;
-            // TODO: err checking
-        }
+	if (msg_nr <= 201){
+        	ret = send_msg(&buffer, dest_process_nr, &state);
+        	if (ret == -1)
+        	{
+        	    is_busy[dest_process_nr] = true;
+        	    // TODO: err checking
+        	}
+	}
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         if (process_nr == 0 && msg_nr % 100 == 0)
         {
             state.signal_commit();
         }
 
-        if (!is_active || msg_nr == 6000)
+        if (!is_active || msg_nr == 260)
         {
             sleep(process_nr);
             return;
