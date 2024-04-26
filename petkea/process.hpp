@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <thread>
 
 const int CHILDREN = 3;
 #include "pet-kea.hpp"

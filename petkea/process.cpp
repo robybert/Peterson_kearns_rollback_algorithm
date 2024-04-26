@@ -384,8 +384,13 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             is_busy[dest_process_nr] = true;
             // TODO: err checking
         }
-        sleep(1);
-        if (!is_active || msg_nr == 50)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (process_nr == 0 && msg_nr % 100 == 0)
+        {
+            state.signal_commit();
+        }
+
+        if (!is_active || msg_nr == 6000)
         {
             sleep(process_nr);
             return;

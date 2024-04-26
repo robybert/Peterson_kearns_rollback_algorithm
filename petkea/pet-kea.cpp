@@ -2,14 +2,19 @@
 
 using namespace std;
 
-void get_fail_filename(int process_nr, char fail_v_filename[32])
+void get_fail_filename(int process_nr, char fail_filename[32])
 {
-    sprintf(fail_v_filename, "fail_v_process_%d.dat", process_nr);
+    sprintf(fail_filename, "fail_v_process_%d.dat", process_nr);
 }
 
-void get_msg_filename(int process_nr, char fail_v_filename[32])
+void get_msg_filename(int process_nr, char msg_filename[32])
 {
-    sprintf(fail_v_filename, "msg_process_%d.dat", process_nr);
+    sprintf(msg_filename, "msg_process_%d.dat", process_nr);
+}
+
+void get_comm_filename(int process_nr, char commit_filename[32])
+{
+    sprintf(commit_filename, "commit_process%d.dat", process_nr);
 }
 
 void Pet_kea::print_msg(struct msg_t *msg)
@@ -81,9 +86,26 @@ char **Pet_kea::State::get_msg_log()
 
 bool Pet_kea::State::check_duplicate(struct msg_t *msg)
 {
-    vector<int> merged_time_fail_v(msg->time_v.size() + msg->fail_v.size());
-    merge(msg->time_v.begin(), msg->time_v.end(), msg->fail_v.begin(), msg->fail_v.end(), merged_time_fail_v.begin());
+    vector<int> merged_time_fail_v;
+    merged_time_fail_v = msg->time_v;
+    merged_time_fail_v.insert(merged_time_fail_v.end(), msg->fail_v.begin(), msg->fail_v.end());
     auto [it, inserted] = arrived_msgs.insert(merged_time_fail_v);
+    return !(inserted);
+}
+
+bool Pet_kea::State::check_duplicate_ctrl(struct fail_log_t log)
+{
+    vector<int> fail_log_vector{log.id, log.fail_nr, log.res_time};
+    auto [it, inserted] = arrived_ctrl.insert(fail_log_vector);
+    return !(inserted);
+}
+
+bool Pet_kea::State::check_duplicate_commit(struct msg_log_t *l_msg)
+{
+    vector<int> merged_time_fail_v;
+    merged_time_fail_v = l_msg->time_v_sender;
+    merged_time_fail_v.insert(merged_time_fail_v.end(), l_msg->fail_v_sender.begin(), l_msg->fail_v_sender.end());
+    auto [it, inserted] = committed_msg_set.insert(merged_time_fail_v);
     return !(inserted);
 }
 
@@ -142,7 +164,7 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
 
     for (int i = 1; i < checkpoint_cnt; i++)
     {
-        if (reverse_to_remove.back() == i)
+        if (reverse_to_remove.back() == i) // TODO: undefined behaviour
         {
             reverse_to_remove.pop_back();
             old_ptr = next_checkpoint(old_ptr);
@@ -165,12 +187,13 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
 
         temp_ptr = next_checkpoint(temp_ptr);
 
-        memcpy(new_ptr, old_ptr, (temp_ptr - old_ptr));
+        memcpy(new_ptr, old_ptr, (temp_ptr - old_ptr) * sizeof(int));
 
         new_checkpoints.push_back(checkpoint_msg_cnt);
         new_ck_time_v.push_back(ck_time_v[i]);
 
-        new_ptr += (old_ptr - temp_ptr);
+        new_ptr += (temp_ptr - old_ptr);
+        old_ptr = temp_ptr;
         // *new_ptr = *old_ptr;
         // new_ptr++;
         // old_ptr++;
@@ -201,7 +224,11 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
     checkpoints.swap(new_checkpoints);
     ck_time_v.swap(new_ck_time_v);
 
-    file_size = new_ptr - (int *)new_msg_file;
+    size_t test = (size_t)new_ptr;
+    size_t test2 = (size_t)(int *)&new_msg_file;
+
+    file_size = new_ptr - (int *)&new_msg_file;
+    file_size = test - test2;
 
     new_ptr = (int *)new_msg_file;
     *new_ptr = id;
@@ -232,7 +259,7 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
             dest = &msg_log[j];
             free(msg_log[j].msg_buf);
             vector<int>().swap(msg_log[j].time_v_reciever);
-            vector<int>().swap(msg_log[j].time_v_sender);
+            vector<int>().swap(msg_log[j].time_v_sender); // TODO: double free
             vector<int>().swap(msg_log[j].fail_v_sender);
         }
         else
@@ -270,37 +297,43 @@ void Pet_kea::State::serialize_commit(struct comm_msg_t *msg, char *data)
     {
     case COMM1:
         *q = 0; // padding
-        return;
+        break;
 
     case COMM2:
         *q = msg->time_v_j;
-        return;
+        break;
 
     case COMM3:
         *q = msg->committed_cnt;
         q++;
-        for (int i = 0; i < (int)msg->time_v_min.size(); i++)
+        for (int i = 0; i < (int)time_v.size(); i++)
         {
             *q = msg->time_v_min[i];
             q++;
         }
-
-        for (set<pair<vector<int>, vector<int>>>::iterator ptr = msg->committed_msgs.begin(); ptr != msg->committed_msgs.end(); ptr++)
+        for (unordered_set<vector<int>, vector_hash>::iterator ptr = msg->committed_msgs.begin(); ptr != msg->committed_msgs.end(); ptr++)
         {
-            for (int i = 0; i < (int)time_v.size(); i++)
+            for (int i = 0; i < (int)time_v.size() * 2; i++)
             {
-                *q = ptr->first[i];
+                *q = ptr->at(i);
                 q++;
             }
+        }
+        break;
+    case COMM4:
 
-            for (int i = 0; i < (int)time_v.size(); i++)
+        *q = msg->committed_cnt;
+        q++;
+        for (unordered_set<vector<int>, vector_hash>::iterator ptr = msg->committed_msgs.begin(); ptr != msg->committed_msgs.end(); ptr++)
+        {
+            for (int i = 0; i < (int)time_v.size() * 2; i++)
             {
-                *q = ptr->second[i];
+                *q = ptr->at(i);
                 q++;
             }
         }
 
-        return;
+        break;
 
     default:
         break;
@@ -315,20 +348,21 @@ void Pet_kea::State::deserialize_commit(char *data, struct comm_msg_t *msg)
 
     msg->sending_process_nr = *q;
     q++;
-    pair<vector<int>, vector<int>> temp_pair;
+    vector<int> temp_vec;
     switch (msg->msg_type)
     {
     case COMM1:
-        return;
+        break;
 
     case COMM2:
         msg->time_v_j = *q;
-        return;
+        break;
 
     case COMM3:
+
         msg->committed_cnt = *q;
         q++;
-        for (int i = 0; i < (int)msg->time_v_min.size(); i++)
+        for (int i = 0; i < (int)time_v.size(); i++)
         {
             msg->time_v_min.push_back(*q);
             q++;
@@ -336,23 +370,33 @@ void Pet_kea::State::deserialize_commit(char *data, struct comm_msg_t *msg)
 
         for (int i = 0; i < msg->committed_cnt; i++)
         {
-            for (int i = 0; i < (int)time_v.size(); i++)
+            for (int j = 0; j < (int)time_v.size() * 2; j++)
             {
-                temp_pair.first.push_back(*q);
+                temp_vec.push_back(*q);
                 q++;
             }
 
-            for (int i = 0; i < (int)time_v.size(); i++)
+            msg->committed_msgs.insert(temp_vec);
+            temp_vec.clear();
+        }
+        break;
+    case COMM4:
+
+        msg->committed_cnt = *q;
+        q++;
+        for (int i = 0; i < msg->committed_cnt; i++)
+        {
+            for (int j = 0; j < (int)time_v.size() * 2; j++)
             {
-                temp_pair.second.push_back(*q);
+                temp_vec.push_back(*q);
                 q++;
             }
-            msg->committed_msgs.insert(temp_pair);
-            temp_pair.first.clear();
-            temp_pair.second.clear();
+
+            msg->committed_msgs.insert(temp_vec);
+            temp_vec.clear();
         }
 
-        return;
+        break;
 
     default:
         break;
@@ -378,7 +422,7 @@ void Pet_kea::State::serialize_ctrl(struct ctrl_msg_t *msg, char *data)
     *q = msg->log_entry.res_time;
     q++;
 
-    for (set<pair<int, vector<int>>>::iterator ptr = msg->recieved_msgs.begin(); ptr != msg->recieved_msgs.end(); ptr++)
+    for (set<pair<int, vector<int>>>::iterator ptr = msg->recieved_msgs.begin(); ptr != msg->recieved_msgs.end(); ptr++) // TODO: is this correct?
     {
         *q = ptr->first;
         q++;
@@ -493,6 +537,8 @@ void Pet_kea::State::serialize_log(struct msg_log_t *log, char *data)
     q++;
     *q = log->process_id;
     q++;
+    *q = log->next_checkpoint;
+    q++;
 
     for (int i = 0; i < (int)time_v.size(); i++)
     {
@@ -522,6 +568,8 @@ int Pet_kea::State::deserialize_log(char *data, struct msg_log_t *log)
     log->recipient = *q;
     q++;
     log->process_id = *q;
+    q++;
+    log->next_checkpoint = *q;
     q++;
 
     for (int i = 0; i < (int)time_v.size(); i++)
@@ -610,6 +658,7 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
     }
 
     msg_log[msg_cnt].msg_size = msg->msg_size;
+    msg_log[msg_cnt].next_checkpoint = checkpoints.size();
     msg_log[msg_cnt].msg_buf = (char *)malloc(msg->msg_size);
     memcpy(msg_log[msg_cnt].msg_buf, msg->msg_buf, msg->msg_size);
 
@@ -637,9 +686,20 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
     return 0;
 }
 
-int Pet_kea::State::commit_msg(struct msg_log_t *msg)
+int Pet_kea::State::commit_msgs(vector<int> msgs)
 {
     // TODO: think of how to commit the message maybe another file?
+    char filename[32];
+    get_comm_filename(id, filename);
+
+    for (int iterator : msgs)
+    {
+        char data[msg_log[iterator].msg_size + SER_LOG_SIZE];
+        serialize_log(&msg_log[iterator], data);
+        commit_out.write(data, msg_log[iterator].msg_size + SER_LOG_SIZE);
+    }
+    commit_out.flush();
+
     return 0;
 }
 
@@ -829,9 +889,12 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
                                                                                      time_v(process_cnt, 0),
                                                                                      fail_v(process_cnt, 0),
                                                                                      msg_cnt(0),
+                                                                                     commit_v(process_cnt, false),
+                                                                                     remove_v(process_cnt, false),
                                                                                      arrived_msgs()
 
 {
+    time_v_min = vector(process_cnt, 0);
     fildes = (int **)malloc(process_cnt * sizeof(int *));
     for (int i = 0; i < process_cnt; i++)
     {
@@ -911,8 +974,11 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
             }
         }
 
-        msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::app); // TODO: this is where .dat files get cleared
+        msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::app);
+        get_comm_filename(id, filename);
+        commit_out.open(filename, ofstream::out | ofstream::binary | ofstream::app);
         get_fail_filename(id, filename);
+
         ifstream fail_in(filename, ifstream::in | ifstream::binary);
 
         fail_in.seekg(0, fail_in.end);
@@ -954,6 +1020,8 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
         ofstream fail_out(filename, ofstream::out | ofstream::binary | ofstream::trunc);
         get_msg_filename(id, filename);
         msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::trunc);
+        get_comm_filename(id, filename);
+        commit_out.open(filename, ofstream::out | ofstream::binary | ofstream::trunc);
 
         struct fail_log_t entry = {id, 0, 0};
         fail_out.write((char *)&entry, sizeof(fail_log_t));
@@ -1016,7 +1084,6 @@ int Pet_kea::State::checkpoint()
 
     // append last messages
     msg_out.seekp(0, ofstream::end);
-    size_t log_size = SER_LOG_SIZE;
 
     msg_out.write((char *)update, sizeof(int) * 3);
     free(update);
@@ -1027,10 +1094,9 @@ int Pet_kea::State::checkpoint()
 
     for (int i = checkpoints.back(); i < msg_cnt; i++)
     {
-        char data[msg_log[i].msg_size + log_size];
+        char data[msg_log[i].msg_size + SER_LOG_SIZE];
         serialize_log(&msg_log[i], data);
-        msg_out.write(data, msg_log[i].msg_size + log_size);
-        msg_log[i].next_checkpoint = checkpoints.size();
+        msg_out.write(data, msg_log[i].msg_size + SER_LOG_SIZE);
     }
     checkpoints.push_back(msg_cnt);
     ck_time_v.push_back(time_v);
@@ -1069,11 +1135,14 @@ int Pet_kea::State::signal_commit()
     // write to all other processes
     for (int i = 0; i < (int)time_v.size(); i++)
     {
+        if (i == id)
+            continue;
         if (write(fildes[i][1], data, SER_COMM1_SIZE) < 0)
         {
             // TODO:handle error
         }
     }
+    commit_v[id] = true;
     return 0;
 }
 
@@ -1098,26 +1167,32 @@ int Pet_kea::State::send_commit(int target_id)
 int Pet_kea::State::remove_data()
 {
     vector<int> indices_to_remove;
+    vector<int> temp_vec;
     // remove messages
     for (int i = 0; i < msg_cnt; i++)
     {
+        if (msg_log[i].next_checkpoint >= (int)checkpoints.size())
+            break;
         if (msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min) // tODO: fix removing Ts and Fs from arrived messages
         {
             // remove form msg_log
             indices_to_remove.push_back(i);
+            continue;
         }
-
-        if (!msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min && committed_msg_set.contains(pair<vector<int>, vector<int>>(msg_log[i].time_v_sender, msg_log[i].fail_v_sender))) // TODO: check comparing vectors
+        temp_vec = msg_log[i].time_v_sender;
+        temp_vec.insert(temp_vec.end(), msg_log[i].fail_v_sender.begin(), msg_log[i].fail_v_sender.end());
+        if (!msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min && committed_recieve_events.contains(temp_vec)) // TODO: check comparing vectors
         {
             // remove from msg_log
             indices_to_remove.push_back(i);
         }
+        temp_vec.clear();
     }
     msg_cnt = rem_log_entries(indices_to_remove, msg_cnt);
     indices_to_remove.clear();
     // remove checkpoint
 
-    for (int i = 0; i < (int)checkpoints.size() - 1; i++)
+    for (int i = 1; i < (int)checkpoints.size() - 1; i++)
     {
         if (ck_time_v[i + 1] <= time_v_min)
         {
@@ -1136,16 +1211,16 @@ int Pet_kea::State::commit(bool is_instigator)
     vector<int> committed_msgs;
     for (int i = 0; i < msg_cnt; i++)
     {
-        if ((msg_log[i].recipient ? msg_log[i].time_v_reciever : msg_log[i].time_v_sender) <= time_v_min)
+        if ((msg_log[i].recipient ? msg_log[i].time_v_reciever : msg_log[i].time_v_sender) <= time_v_min && !check_duplicate_commit(&msg_log[i]))
         {
             committed_msgs.push_back(i);
-            commit_msg(&msg_log[i]);
         }
     }
+    commit_msgs(vector<int>(committed_msgs));
 
     // remove information
 
-    set<pair<vector<int>, vector<int>>> committed_set[time_v.size()];
+    unordered_set<vector<int>, vector_hash> committed_set[time_v.size()];
     struct comm_msg_t msg;
     if (is_instigator)
     {
@@ -1157,24 +1232,33 @@ int Pet_kea::State::commit(bool is_instigator)
         msg.msg_type = COMM4;
     }
     msg.sending_process_nr = id;
+    vector<int> merged_vector;
 
-    for (int i = committed_msgs.back(); !committed_msgs.empty();)
+    // for (int i = committed_msgs.back(); !committed_msgs.empty(); i = committed_msgs.back())
+    int it;
+    while (!committed_msgs.empty())
     {
-        if (msg_log[i].recipient)
+        it = committed_msgs.back();
+        if (msg_log[it].recipient)
         {
-            committed_set[msg_log[i].process_id].insert(pair<vector<int>, vector<int>>(msg_log[i].time_v_sender, msg_log[i].fail_v_sender));
+            merged_vector = msg_log[it].time_v_sender;
+            merged_vector.insert(merged_vector.end(), msg_log[it].fail_v_sender.begin(), msg_log[it].fail_v_sender.end());
+            committed_set[msg_log[it].process_id].insert(merged_vector);
+            merged_vector.clear();
         }
 
         committed_msgs.pop_back();
-        i = committed_msgs.back();
+        // i = committed_msgs.back();
     }
+
+    remove_v[id] = true;
+    int max_cnt = 0;
     for (int i = 0; i < (int)time_v.size(); i++)
     {
-        committed_msg_set.insert(committed_set[i].begin(), committed_set[i].end());
+        if (max_cnt < (int)committed_set[i].size())
+            max_cnt = committed_set[i].size();
     }
-    remove_cnt++;
-
-    char *data;
+    char *data = (char *)malloc(msg.msg_type == COMM3 ? SER_COMM3_SIZE(max_cnt) : SER_COMM4_SIZE(max_cnt));
     // write to all other processes
     for (int i = 0; i < (int)time_v.size(); i++)
     {
@@ -1183,19 +1267,31 @@ int Pet_kea::State::commit(bool is_instigator)
 
         msg.committed_msgs = committed_set[i];
         msg.committed_cnt = committed_set[i].size();
-        if (msg.msg_type == COMM3)
-            data = (char *)malloc(SER_COMM3_SIZE(msg.committed_cnt));
+
+        if (is_instigator)
+        {
+
+            cout << id << " sending comm3 to " << i << "commit_cnt: " << msg.committed_cnt << "time_v_min:";
+            for (int j = 0; j < (int)time_v.size(); j++)
+            {
+                cout << msg.time_v_min[j] << ":";
+            }
+            cout << endl;
+        }
         else
-            data = (char *)malloc(SER_COMM4_SIZE(msg.committed_cnt));
+        {
+            cout << id << " sending comm4 to " << i << "commit_cnt: " << msg.committed_cnt << endl;
+        }
 
         serialize_commit(&msg, data);
 
-        if (write(fildes[i][1], data, msg.msg_type == COMM3 ? SER_COMM3_SIZE(msg.committed_cnt) : SER_COMM4_SIZE(msg.committed_cnt)) < 0)
+        if (write(fildes[i][1], data, (msg.msg_type == COMM3 ? SER_COMM3_SIZE(msg.committed_cnt) : SER_COMM4_SIZE(msg.committed_cnt))) < 0)
         {
             // TODO:handle error
         }
-        free(data);
+        msg.committed_msgs.clear();
     }
+    free(data);
     return 0;
 }
 
@@ -1255,7 +1351,38 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 
         int *q = (int *)data;
 
-        if (CTRL == (msg_type)*q)
+        if (MSG == (msg_type)*q)
+        {
+            ret = read(fildes[0], extra_data, SER_MSG_SIZE + size - init_read_size);
+            struct msg_t msg;
+            deserialize(data, &msg);
+            free(data);
+
+            if (check_duplicate(&msg))
+            {
+                return 3;
+            }
+
+            if (check_orphaned(&msg))
+            {
+                return 3;
+            }
+
+            time_v[id]++;
+            for (int i = 0; i < (int)time_v.size(); i++)
+            {
+                if (i == id)
+                    continue;
+                time_v.at(i) = max(msg.time_v[i], time_v[i]);
+            }
+
+            // inc T^i and inc T^/j to max(T^j of send event, prev event T^j)
+
+            store_msg(&msg, -1);
+
+            memcpy(output, msg.msg_buf, msg.msg_size);
+        }
+        else if (CTRL == (msg_type)*q)
         {
 
             q++;
@@ -1271,6 +1398,9 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
             deserialize_ctrl(c_data, &c_msg);
             free(c_data);
             free(data);
+            if (check_duplicate_ctrl(c_msg.log_entry))
+                return 2;
+
             rollback(&c_msg);
             return 2;
         }
@@ -1297,81 +1427,78 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
         }
         else if (COMM1 == (msg_type)*q)
         {
+            cout << id << " entered COMM1" << endl;
             q++;
             send_commit(*q);
+            free(data);
             return 4;
         }
         else if (COMM2 == (msg_type)*q)
         {
+            cout << id << " entered COMM2" << endl;
+
             ret = read(fildes[0], extra_data, SER_COMM2_SIZE - init_read_size);
             struct comm_msg_t comm2_msg;
             deserialize_commit(data, &comm2_msg);
+            free(data);
             time_v_min[comm2_msg.sending_process_nr] = comm2_msg.time_v_j;
-            commit_cnt++;
-            if (commit_cnt == (int)time_v.size() - 1) // TODO: think about this logic
+            commit_v[comm2_msg.sending_process_nr] = true;
+            if (commit_v == vector<bool>(time_v.size(), true))
             {
+                commit_v.flip();
+                time_v_min[id] = ck_time_v.back().at(id);
                 commit(true);
             }
             return 4;
         }
         else if (COMM3 == (msg_type)*q)
         {
+            cout << id << " entered COMM3" << endl;
             q++;
             q++;
+            char *comm3_data = (char *)malloc(SER_COMM3_SIZE(*q));
+            memcpy(comm3_data, data, init_read_size);
+
+            extra_data = comm3_data + init_read_size;
+
             ret = read(fildes[0], extra_data, SER_COMM3_SIZE(*q) - init_read_size);
 
             struct comm_msg_t comm3_msg;
-            deserialize_commit(data, &comm3_msg);
+            deserialize_commit(comm3_data, &comm3_msg);
+            free(comm3_data);
+            free(data);
             time_v_min = comm3_msg.time_v_min;
 
             commit(false);
-            committed_msg_set.insert(comm3_msg.committed_msgs.begin(), comm3_msg.committed_msgs.end());
-            remove_cnt++;
+            committed_recieve_events.insert(comm3_msg.committed_msgs.begin(), comm3_msg.committed_msgs.end());
+            // committed_msg_set.insert(comm3_msg.committed_msgs.begin(), comm3_msg.committed_msgs.end());
+            remove_v[comm3_msg.sending_process_nr] = true;
             return 4;
         }
         else if (COMM4 == (msg_type)*q) // TODO: write this
         {
+            cout << id << " entered COMM4" << endl;
             q++;
             q++;
+            char *comm4_data = (char *)malloc(SER_COMM4_SIZE(*q));
+            memcpy(comm4_data, data, init_read_size);
+
+            extra_data = comm4_data + init_read_size;
+
             ret = read(fildes[0], extra_data, SER_COMM4_SIZE(*q) - init_read_size);
             struct comm_msg_t comm4_msg;
-            deserialize_commit(data, &comm4_msg);
-            committed_msg_set.insert(comm4_msg.committed_msgs.begin(), comm4_msg.committed_msgs.end());
-            remove_cnt++;
-            if (remove_cnt == (int)time_v.size())
+            deserialize_commit(comm4_data, &comm4_msg);
+            free(comm4_data);
+            free(data);
+            committed_recieve_events.insert(comm4_msg.committed_msgs.begin(), comm4_msg.committed_msgs.end());
+            remove_v[comm4_msg.sending_process_nr] = true;
+            if (remove_v == vector<bool>(time_v.size(), true))
             {
+                remove_v.flip();
                 remove_data();
             }
+            return 4;
         }
-
-        ret = read(fildes[0], extra_data, SER_MSG_SIZE + size - init_read_size);
-        struct msg_t msg;
-        deserialize(data, &msg);
-        free(data);
-
-        if (check_duplicate(&msg))
-        {
-            return 3;
-        }
-
-        if (check_orphaned(&msg))
-        {
-            return 3;
-        }
-
-        time_v[id]++;
-        for (int i = 0; i < (int)time_v.size(); i++)
-        {
-            if (i == id)
-                continue;
-            time_v.at(i) = max(msg.time_v[i], time_v[i]);
-        }
-
-        // inc T^i and inc T^/j to max(T^j of send event, prev event T^j)
-
-        store_msg(&msg, -1);
-
-        memcpy(output, msg.msg_buf, msg.msg_size);
     }
     catch (const std::exception &e)
     {

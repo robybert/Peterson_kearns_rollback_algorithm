@@ -42,9 +42,9 @@ int main(int argc, char const *argv[])
     this_thread::sleep_for(chrono::seconds(16));
 
     // restart the selected process
-    c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
+    // c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
 
-    while (0)
+    while (1)
     {
 
         if (c_pid[to_restart] != -1)

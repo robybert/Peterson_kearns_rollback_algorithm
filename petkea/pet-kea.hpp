@@ -78,7 +78,7 @@ namespace Pet_kea
         int time_v_j;
         std::vector<int> time_v_min;
         int committed_cnt;
-        std::set<std::pair<std::vector<int>, std::vector<int>>> committed_msgs;
+        std::unordered_set<std::vector<int>, vector_hash> committed_msgs;
     };
 
     struct ctrl_msg_t
@@ -148,19 +148,23 @@ namespace Pet_kea
     private:
         int id;
         std::vector<int> time_v;
+        std::vector<int> time_v_min;
         std::vector<int> fail_v;
         int **fildes;
         msg_log_t *msg_log;
         int msg_cnt;
-        int commit_cnt;
-        int remove_cnt;
+        std::vector<bool> commit_v;
+        std::vector<bool> remove_v;
         std::vector<int> checkpoints;
         std::vector<std::vector<int>> ck_time_v;
-        std::vector<int> time_v_min;
+
         std::vector<struct fail_log_t> fail_log;
         std::unordered_set<std::vector<int>, vector_hash> arrived_msgs;
-        std::set<std::pair<std::vector<int>, std::vector<int>>> committed_msg_set;
+        std::unordered_set<std::vector<int>, vector_hash> arrived_ctrl;
+        std::unordered_set<std::vector<int>, vector_hash> committed_msg_set;
+        std::unordered_set<std::vector<int>, vector_hash> committed_recieve_events;
         std::ofstream msg_out;
+        std::ofstream commit_out;
 
         /**
          * @brief Checks if a message is a duplicate message.
@@ -168,6 +172,9 @@ namespace Pet_kea
          * @return true if if the message is a duplicate, false otherwise.
          */
         bool check_duplicate(struct msg_t *msg);
+
+        bool check_duplicate_ctrl(struct fail_log_t log);
+        bool check_duplicate_commit(struct msg_log_t *l_msg);
 
         /**
          * @brief Checks if a message is orphaned.
@@ -242,7 +249,7 @@ namespace Pet_kea
          */
         int store_msg(struct msg_t *msg, int recipient);
 
-        int commit_msg(struct msg_log_t *msg);
+        int commit_msgs(std::vector<int> committed_msgs);
 
         /**
          * @brief performs a rollback
@@ -251,12 +258,18 @@ namespace Pet_kea
          */
         int rollback(struct ctrl_msg_t *msg);
 
+        int send_commit(int target_id);
+
+        int commit(bool is_instigator);
+
+        int remove_data();
+
     public:
-        const int SER_LOG_SIZE = 3 * sizeof(int) + time_v.size() * 3 * sizeof(int);
+        const int SER_LOG_SIZE = 4 * sizeof(int) + time_v.size() * 3 * sizeof(int);
         const int SER_COMM1_SIZE = 3 * sizeof(int);
         const int SER_COMM2_SIZE = 3 * sizeof(int);
-        int SER_COMM3_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) + (3 + time_v.size()) * sizeof(int); };
-        int SER_COMM4_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int); };
+        int SER_COMM3_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + (3 + time_v.size()) * sizeof(int); };
+        int SER_COMM4_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + 3 * sizeof(int); };
         const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
         const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
         // const int MSG_CHECKPOINT_BYTESYZE = SAVE_CNT * (AVERAGE_MSG_BYTESIZE + (3 + 3 * time_v.size()) * sizeof(int));
@@ -295,13 +308,7 @@ namespace Pet_kea
          */
         int checkpoint();
 
-        int remove_data();
-
         int signal_commit();
-
-        int send_commit(int target_id);
-
-        int commit(bool is_instigator);
 
         /**
          * @brief Sends a message to another process that will be recorded in the state.
@@ -312,8 +319,6 @@ namespace Pet_kea
          * @return Number of bytes sent on success, -1 on failure.
          */
         int send_msg(char *input, int process_id, int size);
-
-        int recv_commit();
 
         /**
          * @brief Receives a message from another process
