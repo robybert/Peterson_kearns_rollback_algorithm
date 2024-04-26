@@ -255,6 +255,10 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
         if (i == *curr)
         {
             curr++;
+            free(msg_log[i].msg_buf);
+            vector<int>().swap(msg_log[i].time_v_reciever);
+            vector<int>().swap(msg_log[i].time_v_sender); // TODO: double free
+            vector<int>().swap(msg_log[i].fail_v_sender);
             continue;
         }
         new_log[new_final_index] = msg_log[i];
@@ -1062,10 +1066,10 @@ Pet_kea::State::~State()
     for (int i = msg_cnt - 1; i >= 0; i--)
     {
         // if (msg_log[i].recipient)
-        //	std::vector<int>().swap(msg_log[i].time_v_reciever);
+        std::vector<int>().swap(msg_log[i].time_v_reciever);
 
-        //  std::vector<int>().swap(msg_log[i].time_v_sender);
-        //  std::vector<int>().swap(msg_log[i].fail_v_sender);
+        std::vector<int>().swap(msg_log[i].time_v_sender);
+        std::vector<int>().swap(msg_log[i].fail_v_sender);
 
         free(msg_log[i].msg_buf);
     }
