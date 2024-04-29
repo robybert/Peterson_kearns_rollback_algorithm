@@ -44,7 +44,7 @@ int main(int argc, char const *argv[])
     // restart the selected process
     // c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
 
-    while (1)
+    while (0)
     {
 
         if (c_pid[to_restart] != -1)

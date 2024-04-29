@@ -198,6 +198,8 @@ namespace Pet_kea
          */
         bool check_orphaned(struct msg_t *msg);
 
+        int next_checkpoint_after_rem(std::vector<int> removed_checkpoints, int curr_next_checkpoint);
+
         /**
          * @brief Removes log entries based on provided indices.
          * @param to_remove Vector containing indices of log entries to be removed.

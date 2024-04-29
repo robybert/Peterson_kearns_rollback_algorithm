@@ -90,6 +90,12 @@ bool Pet_kea::State::check_duplicate(struct msg_t *msg)
     merged_time_fail_v = msg->time_v;
     merged_time_fail_v.insert(merged_time_fail_v.end(), msg->fail_v.begin(), msg->fail_v.end());
     auto [it, inserted] = arrived_msgs.insert(merged_time_fail_v);
+    if (msg->fail_v[id] == fail_v[id]) // TODO: make this work if another failure occurs before it is removed
+    {
+        // remove the entry from the set
+        arrived_msgs.erase(it);
+    }
+
     return !(inserted);
 }
 
@@ -244,9 +250,22 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
     return;
 }
 
+int Pet_kea::State::next_checkpoint_after_rem(vector<int> removed_checkpoints, int curr_next_checkpoint)
+{
+    int result = curr_next_checkpoint;
+    for (const int &i : removed_checkpoints)
+    {
+        if (i < curr_next_checkpoint)
+            result--;
+        else
+            break;
+    }
+    return result;
+}
+
 int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 {
-	cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
+    cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
     msg_log_t *new_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
 
     vector<int>::iterator curr = to_remove.begin();
@@ -264,13 +283,13 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
         }
         new_log[new_final_index] = msg_log[i];
         new_final_index++;
-	vector<int>().swap(msg_log[i].time_v_reciever);
+        vector<int>().swap(msg_log[i].time_v_reciever);
         vector<int>().swap(msg_log[i].time_v_sender); // TODO: double free
         vector<int>().swap(msg_log[i].fail_v_sender);
     }
     free(msg_log);
     msg_log = new_log;
-	cout << id << " new msg_cnt:" << new_final_index << endl;
+    cout << id << " new msg_cnt:" << new_final_index << endl;
     return new_final_index;
 }
 
@@ -1199,40 +1218,97 @@ int Pet_kea::State::send_commit(int target_id)
 
 int Pet_kea::State::remove_data()
 {
-    vector<int> indices_to_remove;
+    vector<int> indices_to_remove, checkpoints_to_remove;
     vector<int> temp_vec;
-    // remove messages
-    for (int i = 0; i < msg_cnt; i++)
-    {
-        if (msg_log[i].next_checkpoint >= (int)checkpoints.size())
-            break;
-        if (msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min) // tODO: fix removing Ts and Fs from arrived messages
-        {
-            // remove form msg_log
-            indices_to_remove.push_back(i);
-            continue;
-        }
-        temp_vec = msg_log[i].time_v_sender;
-        temp_vec.insert(temp_vec.end(), msg_log[i].fail_v_sender.begin(), msg_log[i].fail_v_sender.end());
-        if (!msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min && committed_recieve_events.contains(temp_vec)) // TODO: check comparing vectors
-        {
-            // remove from msg_log
-            indices_to_remove.push_back(i);
-        }
-        temp_vec.clear();
-    }
-    msg_cnt = rem_log_entries(indices_to_remove, msg_cnt);
-    indices_to_remove.clear();
-    // remove checkpoint
+    unordered_set<std::vector<int>, vector_hash> next_committed_recieve_events;
 
+    // remove checkpoint
     for (int i = 1; i < (int)checkpoints.size() - 1; i++)
     {
         if (ck_time_v[i + 1] <= time_v_min)
         {
-            indices_to_remove.push_back(i);
+            checkpoints_to_remove.push_back(i);
         }
     }
-    rem_checkpoints(indices_to_remove);
+
+    // remove messages
+    for (int i = 0; i < msg_cnt; i++)
+    {
+        temp_vec.clear();
+        temp_vec = msg_log[i].time_v_sender;
+        temp_vec.insert(temp_vec.end(), msg_log[i].fail_v_sender.begin(), msg_log[i].fail_v_sender.end());
+        if (msg_log[i].next_checkpoint >= (int)checkpoints.size())
+        {
+            msg_log[i].next_checkpoint = next_checkpoint_after_rem(checkpoints_to_remove, msg_log[i].next_checkpoint);
+            if (!msg_log[i].recipient && committed_recieve_events.contains(temp_vec))
+            {
+                next_committed_recieve_events.insert(temp_vec);
+            }
+            continue;
+        }
+        if (msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min) // tODO: fix removing Ts and Fs from arrived messages
+        {
+            // remove form msg_log
+            indices_to_remove.push_back(i);
+            committed_msg_set.erase(temp_vec);
+            continue;
+        }
+
+        if (!msg_log[i].recipient && committed_recieve_events.contains(temp_vec)) // TODO: check comparing vectors
+        {
+            if (ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min)
+            {
+
+                // remove from msg_log
+                indices_to_remove.push_back(i);
+                committed_msg_set.erase(temp_vec);
+                continue;
+            }
+            else
+            {
+                next_committed_recieve_events.insert(temp_vec);
+            }
+        }
+        msg_log[i].next_checkpoint = next_checkpoint_after_rem(checkpoints_to_remove, msg_log[i].next_checkpoint);
+    }
+    msg_cnt = rem_log_entries(indices_to_remove, msg_cnt);
+
+    rem_checkpoints(checkpoints_to_remove);
+    committed_recieve_events.clear();
+    committed_recieve_events = next_committed_recieve_events;
+
+    // for (int i = 0; i < msg_cnt; i++)
+    // {
+    //     if (msg_log[i].recipient)
+    //     {
+    //         cout << id << " recv event with time_v:";
+    //         for (int j = 0; j < (int)time_v.size(); j++)
+    //         {
+    //             cout << msg_log[i].time_v_reciever[j] << ":";
+    //         }
+    //     }
+    //     else
+    //     {
+    //         cout << id << " send event with time_v:";
+    //         for (int j = 0; j < (int)time_v.size(); j++)
+    //         {
+    //             cout << msg_log[i].time_v_sender[j] << ":";
+    //         }
+    //     }
+    //     cout << " next_checkpoint:";
+    //     if (msg_log[i].next_checkpoint < (int)ck_time_v.size())
+    //     {
+    //         for (int j = 0; j < (int)time_v.size(); j++)
+    //         {
+    //             cout << ck_time_v[msg_log[i].next_checkpoint].at(j) << ":";
+    //         }
+    //         cout << endl;
+    //     }
+    //     else
+    //     {
+    //         cout << " not yet checkpointed" << endl;
+    //     }
+    // }
 
     // remove fail_log not possible in asynchronos setting
     return 0;

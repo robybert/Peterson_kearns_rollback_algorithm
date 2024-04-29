@@ -351,7 +351,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             if (buffer.type == MSG)
             {
                 msg_cnt++;
-                cout << process_nr << " " << buffer.ptp_msg.msg << endl;
+                // cout << process_nr << " " << buffer.ptp_msg.msg << endl;
                 continue;
             }
             else if (buffer.type == ERR)
@@ -377,7 +377,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         buffer.sending_process_nr = process_nr;
         memset(buffer.ptp_msg.msg, 0, 64);
         sprintf(buffer.ptp_msg.msg, "message number %d from process %d to process %d", msg_nr++, process_nr, dest_process_nr);
-        if (msg_nr <= 150)
+        if (msg_nr <= 3000)
         {
             ret = send_msg(&buffer, dest_process_nr, &state);
             if (ret == -1)
@@ -386,13 +386,13 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
                 // TODO: err checking
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         if (process_nr == 0 && msg_nr % 100 == 0)
         {
             state.signal_commit();
         }
 
-        if (!is_active || msg_nr == 160)
+        if (!is_active || msg_nr == 3050)
         {
             sleep(process_nr);
             return;
