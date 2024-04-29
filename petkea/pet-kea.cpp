@@ -61,8 +61,6 @@ void Pet_kea::print_ctrl_msg(struct ctrl_msg_t *msg)
 
 int *Pet_kea::State::next_checkpoint(int *ptr)
 {
-
-    ptr++;
     int to_skip = *ptr - *(ptr + 1);
     ptr += 2 + time_v.size();
 
@@ -155,15 +153,15 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
     int *old_ptr = (int *)msg_file;
     int *new_ptr = (int *)new_msg_file;
 
-    old_ptr += 4;
-    new_ptr += 4;
+    old_ptr++;
+    new_ptr++;
 
-    for (int i = 0; i < (int)time_v.size(); i++)
-    {
-        *new_ptr = *old_ptr;
-        new_ptr++;
-        old_ptr++;
-    }
+    // for (int i = 0; i < (int)time_v.size(); i++)
+    // {
+    //     *new_ptr = *old_ptr;
+    //     new_ptr++;
+    //     old_ptr++;
+    // }
 
     int checkpoint_msg_cnt = 0, checkpoint_last_ckpnt = 0;
     int checkpoint_cnt = (int)checkpoints.size();
@@ -184,9 +182,9 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
 
         temp_ptr = old_ptr;
 
-        *new_ptr = *old_ptr;
-        new_ptr++;
-        old_ptr++;
+        // *new_ptr = *old_ptr;
+        // new_ptr++;
+        // old_ptr++;
         checkpoint_last_ckpnt = checkpoint_msg_cnt;
         checkpoint_msg_cnt += *old_ptr - *(old_ptr + 1);
         *new_ptr = checkpoint_msg_cnt;
@@ -242,12 +240,7 @@ void Pet_kea::State::rem_checkpoints(vector<int> to_remove)
     file_size = test - test2;
 
     new_ptr = (int *)new_msg_file;
-    *new_ptr = id;
-    new_ptr++;
-    *new_ptr = checkpoint_msg_cnt;
-    new_ptr++;
-    *new_ptr = checkpoint_last_ckpnt;
-    new_ptr++;
+
     *new_ptr = checkpoints.size() - 1;
 
     msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::trunc);
@@ -1306,7 +1299,8 @@ int Pet_kea::State::checkpoint()
     update--;
 
     msg_out.seekp(0, ofstream::beg);
-    msg_out.write((char *)checkpoints.size(), sizeof(int));
+    int num_checkpoints = checkpoints.size();
+    msg_out.write((char *)&num_checkpoints, sizeof(int));
 
     int *time_v_buffer = (int *)malloc(sizeof(int) * time_v.size());
     for (int i = 0; i < (int)time_v.size(); i++)
