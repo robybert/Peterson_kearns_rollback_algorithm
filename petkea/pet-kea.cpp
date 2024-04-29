@@ -17,6 +17,11 @@ void get_comm_filename(int process_nr, char commit_filename[32])
     sprintf(commit_filename, "commit_process%d.dat", process_nr);
 }
 
+void get_state_filename(int process_nr, char state_filename[32])
+{
+    sprintf(state_filename, "state_process%d.dat", process_nr);
+}
+
 void Pet_kea::print_msg(struct msg_t *msg)
 {
     cout << "MSG  time vector(";
@@ -646,6 +651,176 @@ int Pet_kea::State::deserialize_log(char *data, struct msg_log_t *log)
     return (q - (int *)data) * sizeof(int) + log->msg_size;
 }
 
+void Pet_kea::State::serialize_state(char *data)
+{
+    int *q = (int *)data;
+    *q = id;
+    q++;
+
+    *q = msg_cnt;
+    q++;
+
+    *q = arrived_msgs.size();
+    q++;
+
+    *q = arrived_ctrl.size();
+    q++;
+
+    *q = committed_msg_set.size();
+    q++;
+
+    *q = committed_recieve_events.size();
+    q++;
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        *q = time_v[i];
+        q++;
+    }
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        *q = time_v_min[i];
+        q++;
+    }
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        *q = commit_v[i];
+        q++;
+    }
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        *q = remove_v[i];
+        q++;
+    }
+
+    for (unordered_set<vector<int>, vector_hash>::iterator ptr = arrived_msgs.begin(); ptr != arrived_msgs.end(); ptr++)
+    {
+        for (int i = 0; i < (int)time_v.size() * 2; i++)
+        {
+            *q = ptr->at(i);
+            q++;
+        }
+    }
+    for (unordered_set<vector<int>, vector_hash>::iterator ptr = arrived_ctrl.begin(); ptr != arrived_ctrl.end(); ptr++)
+    {
+        *q = ptr->at(0);
+        q++;
+        *q = ptr->at(1);
+        q++;
+        *q = ptr->at(2);
+        q++;
+    }
+    for (unordered_set<vector<int>, vector_hash>::iterator ptr = committed_msg_set.begin(); ptr != committed_msg_set.end(); ptr++)
+    {
+        for (int i = 0; i < (int)time_v.size() * 2; i++)
+        {
+            *q = ptr->at(i);
+            q++;
+        }
+    }
+    for (unordered_set<vector<int>, vector_hash>::iterator ptr = committed_recieve_events.begin(); ptr != committed_recieve_events.end(); ptr++)
+    {
+        for (int i = 0; i < (int)time_v.size() * 2; i++)
+        {
+            *q = ptr->at(i);
+            q++;
+        }
+    }
+}
+
+void Pet_kea::State::deserialize_state(char *data)
+{
+    int *q = (int *)data;
+    id = *q;
+    q++;
+
+    msg_cnt = *q;
+    q++;
+
+    int arrived_msgs_size = *q;
+    q++;
+
+    int arrived_ctrl_size = *q;
+    q++;
+
+    int committed_msg_set_size = *q;
+    q++;
+
+    int committed_recieve_events_size = *q;
+    q++;
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        time_v.push_back(*q);
+        q++;
+    }
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        time_v_min.push_back(*q);
+        q++;
+    }
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        commit_v.push_back(*q);
+        q++;
+    }
+
+    for (int i = 0; i < (int)time_v.size(); i++)
+    {
+        remove_v.push_back(*q);
+        q++;
+    }
+    vector<int> temp_vec;
+
+    for (int i = 0; i < arrived_msgs_size; i++)
+    {
+        for (int j = 0; j < (int)time_v.size() * 2; j++)
+        {
+            temp_vec.push_back(*q);
+            q++;
+        }
+        arrived_msgs.insert(temp_vec);
+        temp_vec.clear();
+    }
+
+    for (int i = 0; i < arrived_ctrl_size; i++)
+    {
+        temp_vec.push_back(*q);
+        q++;
+        temp_vec.push_back(*q);
+        q++;
+        temp_vec.push_back(*q);
+        q++;
+        arrived_ctrl.insert(temp_vec);
+        temp_vec.clear();
+    }
+
+    for (int i = 0; i < committed_msg_set_size; i++)
+    {
+        for (int j = 0; j < (int)time_v.size() * 2; j++)
+        {
+            temp_vec.push_back(*q);
+            q++;
+        }
+        committed_msg_set.insert(temp_vec);
+        temp_vec.clear();
+    }
+
+    for (int i = 0; i < committed_recieve_events_size; i++)
+    {
+        for (int j = 0; j < (int)time_v.size() * 2; j++)
+        {
+            temp_vec.push_back(*q);
+            q++;
+        }
+        committed_recieve_events.insert(temp_vec);
+        temp_vec.clear();
+    }
+}
+
 void Pet_kea::State::send_ctrl()
 {
     set<pair<int, std::vector<int>>> recvd_msgs[time_v.size()];
@@ -955,30 +1130,36 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
     if (restart)
     {
         char filename[32];
+        get_state_filename(id, filename);
+        ifstream state_in(filename, ifstream::in | ifstream::binary);
+        state_in.seekg(0, ifstream::end);
+        size_t file_size = state_in.tellg();
+        char state_file[file_size];
+        state_in.read(state_file, file_size);
+        state_in.close();
+        deserialize_state(state_file);
+
         get_msg_filename(id, filename);
         ifstream msg_in(filename, ifstream::in | ifstream::binary);
         msg_in.seekg(0, msg_in.end);
-        size_t file_size = msg_in.tellg();
-        msg_in.seekg(0, ifstream::beg);
+        file_size = msg_in.tellg();
         char msg_file[file_size];
         msg_in.read(msg_file, file_size);
         msg_in.close();
 
         int *curr_pos = (int *)msg_file;
 
-        id = *curr_pos;
-        curr_pos++;
-        msg_cnt = *curr_pos;
-        curr_pos++;
-        curr_pos++;
+        // msg_cnt = *curr_pos;
+        // curr_pos++;
+        // curr_pos++;
         int num_checkpoints = *curr_pos;
         curr_pos++;
 
-        for (int i = 0; i < (int)time_v.size(); i++)
-        {
-            time_v[i] = *curr_pos;
-            curr_pos++;
-        }
+        // for (int i = 0; i < (int)time_v.size(); i++)
+        // {
+        //     time_v[i] = *curr_pos;
+        //     curr_pos++;
+        // }
 
         msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
 
@@ -988,7 +1169,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
         int read_msg_cnt = 0;
         for (int i = 0; i < num_checkpoints; i++)
         {
-            curr_pos++;
+            // curr_pos++;
             int ck_msg_cnt = *curr_pos;
             curr_pos++;
             checkpoints.push_back(*curr_pos);
@@ -1112,32 +1293,32 @@ int Pet_kea::State::checkpoint()
 {
     // write state and time vector at the start of the file
 
-    int *update = (int *)malloc(sizeof(int) * 4);
-    *update = id;
-    update++;
+    int *update = (int *)malloc(sizeof(int) * 2);
+    // *update = id;
+    // update++;
     *update = msg_cnt;
     update++;
     *update = checkpoints.back();
-    update++;
-    *update = checkpoints.size();
-    update--;
-    update--;
+    // update++;
+    // *update = checkpoints.size();
+    // update--;
+    // update--;
     update--;
 
     msg_out.seekp(0, ofstream::beg);
-    msg_out.write((char *)update, sizeof(int) * 4);
+    msg_out.write((char *)checkpoints.size(), sizeof(int));
 
     int *time_v_buffer = (int *)malloc(sizeof(int) * time_v.size());
     for (int i = 0; i < (int)time_v.size(); i++)
     {
         time_v_buffer[i] = time_v[i];
     }
-    msg_out.write((char *)time_v_buffer, sizeof(int) * time_v.size());
+    // msg_out.write((char *)time_v_buffer, sizeof(int) * time_v.size());
 
     // append last messages
     msg_out.seekp(0, ofstream::end);
 
-    msg_out.write((char *)update, sizeof(int) * 3);
+    msg_out.write((char *)update, sizeof(int) * 2);
     free(update);
 
     msg_out.write((char *)time_v_buffer, sizeof(int) * time_v.size());
@@ -1154,6 +1335,16 @@ int Pet_kea::State::checkpoint()
     ck_time_v.push_back(time_v);
     msg_out.flush();
 
+    char filename[32];
+    get_state_filename(id, filename);
+
+    ofstream state_out(filename, ofstream::out | ofstream::binary | ofstream::trunc);
+    int state_size = SER_STATE_SIZE(arrived_msgs.size(), arrived_ctrl.size(), committed_msg_set.size(), committed_recieve_events.size());
+
+    char data[state_size];
+    serialize_state(data);
+
+    state_out.write(data, state_size);
     return 0;
 }
 
