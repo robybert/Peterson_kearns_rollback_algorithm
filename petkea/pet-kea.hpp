@@ -350,17 +350,16 @@ namespace Pet_kea
 
     public:
         const int SER_LOG_SIZE = 4 * sizeof(int) + time_v.size() * 3 * sizeof(int);
+        const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
         const int SER_COMM1_SIZE = 3 * sizeof(int);
         const int SER_COMM2_SIZE = 3 * sizeof(int);
-        int SER_COMM3_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + (3 + time_v.size()) * sizeof(int); };
-        int SER_COMM4_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + 3 * sizeof(int); };
-        int SER_STATE_SIZE(int arrived_ctrl_size, int committed_msg_set_size, int committed_recieve_events_size)
+        inline int SER_COMM3_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + (3 + time_v.size()) * sizeof(int); };
+        inline int SER_COMM4_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + 3 * sizeof(int); };
+        inline int SER_STATE_SIZE(int arrived_ctrl_size, int committed_msg_set_size, int committed_recieve_events_size)
         {
             return (5 + (time_v.size() * 4) + ((committed_msg_set_size + committed_recieve_events_size) * time_v.size() * 2) + (3 * arrived_ctrl_size)) * sizeof(int);
         };
-        const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
-        const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
-        // const int MSG_CHECKPOINT_BYTESYZE = SAVE_CNT * (AVERAGE_MSG_BYTESIZE + (3 + 3 * time_v.size()) * sizeof(int));
+
         /**
          * @brief Constructor for State class.
          * @param process_nr The process number.
@@ -396,6 +395,11 @@ namespace Pet_kea
          */
         int checkpoint();
 
+        /**
+         * @brief Signals a commit procedure to take place. the process that calls this function is the instigator of the commit procedure.
+         * @return Returns 0 upon successful signaling of the commit.
+         *         Returns a non-zero value if an error occurs during signaling.
+         */
         int signal_commit();
 
         /**
