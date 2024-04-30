@@ -577,9 +577,6 @@ void Pet_kea::State::serialize_state(char *data)
     *q = msg_cnt;
     q++;
 
-    *q = arrived_msgs.size();
-    q++;
-
     *q = arrived_ctrl.size();
     q++;
 
@@ -611,14 +608,6 @@ void Pet_kea::State::serialize_state(char *data)
         q++;
     }
 
-    for (unordered_set<vector<int>, vector_hash>::iterator ptr = arrived_msgs.begin(); ptr != arrived_msgs.end(); ptr++)
-    {
-        for (int i = 0; i < (int)time_v.size() * 2; i++)
-        {
-            *q = ptr->at(i);
-            q++;
-        }
-    }
     for (unordered_set<vector<int>, vector_hash>::iterator ptr = arrived_ctrl.begin(); ptr != arrived_ctrl.end(); ptr++)
     {
         *q = ptr->at(0);
@@ -655,9 +644,6 @@ void Pet_kea::State::deserialize_state(char *data)
     msg_cnt = *q;
     q++;
 
-    int arrived_msgs_size = *q;
-    q++;
-
     int arrived_ctrl_size = *q;
     q++;
 
@@ -690,19 +676,8 @@ void Pet_kea::State::deserialize_state(char *data)
         remove_v[i] = *q;
         q++;
     }
+
     vector<int> temp_vec;
-
-    for (int i = 0; i < arrived_msgs_size; i++)
-    {
-        for (int j = 0; j < (int)time_v.size() * 2; j++)
-        {
-            temp_vec.push_back(*q);
-            q++;
-        }
-        arrived_msgs.insert(temp_vec);
-        temp_vec.clear();
-    }
-
     for (int i = 0; i < arrived_ctrl_size; i++)
     {
         temp_vec.push_back(*q);
@@ -1092,6 +1067,19 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
             }
         }
 
+        // insert the arrived messages into arrived_msgs
+        vector<int> merged_time_fail_v;
+
+        for (int i = 0; i < msg_cnt; i++)
+        {
+            if (msg_log->recipient)
+            {
+                merged_time_fail_v = msg_log[i].time_v_sender;
+                merged_time_fail_v.insert(merged_time_fail_v.end(), msg_log[i].fail_v_sender.begin(), msg_log[i].fail_v_sender.end());
+                arrived_msgs.insert(merged_time_fail_v);
+            }
+        }
+
         msg_out.open(filename, ofstream::out | ofstream::binary | ofstream::ate | ofstream::in);
         get_comm_filename(id, filename);
         commit_out.open(filename, ofstream::out | ofstream::binary | ofstream::app);
@@ -1222,7 +1210,7 @@ int Pet_kea::State::checkpoint()
     get_state_filename(id, filename);
 
     ofstream state_out(filename, ofstream::out | ofstream::binary | ofstream::trunc);
-    int state_size = SER_STATE_SIZE(arrived_msgs.size(), arrived_ctrl.size(), committed_msg_set.size(), committed_recieve_events.size());
+    int state_size = SER_STATE_SIZE(arrived_ctrl.size(), committed_msg_set.size(), committed_recieve_events.size());
 
     char data[state_size];
     serialize_state(data);

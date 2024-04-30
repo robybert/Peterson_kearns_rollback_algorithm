@@ -290,9 +290,9 @@ namespace Pet_kea
         const int SER_COMM2_SIZE = 3 * sizeof(int);
         int SER_COMM3_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + (3 + time_v.size()) * sizeof(int); };
         int SER_COMM4_SIZE(int committed_cnt) { return (committed_cnt * time_v.size() * 2) * sizeof(int) + 3 * sizeof(int); };
-        int SER_STATE_SIZE(int arrived_msgs_size, int arrived_ctrl_size, int committed_msg_set_size, int committed_recieve_events_size)
+        int SER_STATE_SIZE(int arrived_ctrl_size, int committed_msg_set_size, int committed_recieve_events_size)
         {
-            return (6 + (time_v.size() * 4) + ((arrived_msgs_size + committed_msg_set_size + committed_recieve_events_size) * time_v.size() * 2) + (3 * arrived_ctrl_size)) * sizeof(int);
+            return (5 + (time_v.size() * 4) + ((committed_msg_set_size + committed_recieve_events_size) * time_v.size() * 2) + (3 * arrived_ctrl_size)) * sizeof(int);
         };
         const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
         const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
