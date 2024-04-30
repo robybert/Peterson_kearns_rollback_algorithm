@@ -89,24 +89,25 @@ char **Pet_kea::State::get_msg_log()
 
 bool Pet_kea::State::check_duplicate(struct msg_t *msg)
 {
+
     vector<int> merged_time_fail_v;
     merged_time_fail_v = msg->time_v;
     merged_time_fail_v.insert(merged_time_fail_v.end(), msg->fail_v.begin(), msg->fail_v.end());
-    auto [it, inserted] = arrived_msgs.insert(merged_time_fail_v);
-    if (msg->fail_v[id] == fail_v[id]) // TODO: make this work if another failure occurs before it is removed
-    {
-        // remove the entry from the set
-        arrived_msgs.erase(it);
-    }
+    if (arrived_msgs.contains(merged_time_fail_v))
+        return true;
 
-    return !(inserted);
+    arrived_msgs.insert(merged_time_fail_v);
+    return false;
 }
 
 bool Pet_kea::State::check_duplicate_ctrl(struct fail_log_t log)
 {
     vector<int> fail_log_vector{log.id, log.fail_nr, log.res_time};
-    auto [it, inserted] = arrived_ctrl.insert(fail_log_vector);
-    return !(inserted);
+    if (arrived_ctrl.contains(fail_log_vector))
+        return true;
+
+    arrived_ctrl.insert(fail_log_vector);
+    return false;
 }
 
 bool Pet_kea::State::check_duplicate_commit(struct msg_log_t *l_msg)
@@ -114,8 +115,11 @@ bool Pet_kea::State::check_duplicate_commit(struct msg_log_t *l_msg)
     vector<int> merged_time_fail_v;
     merged_time_fail_v = l_msg->time_v_sender;
     merged_time_fail_v.insert(merged_time_fail_v.end(), l_msg->fail_v_sender.begin(), l_msg->fail_v_sender.end());
-    auto [it, inserted] = committed_msg_set.insert(merged_time_fail_v);
-    return !(inserted);
+    if (committed_msg_set.contains(merged_time_fail_v))
+        return true;
+
+    committed_msg_set.insert(merged_time_fail_v);
+    return false;
 }
 
 bool Pet_kea::State::check_orphaned(struct msg_t *msg)
@@ -1201,6 +1205,17 @@ int Pet_kea::State::checkpoint()
         char data[msg_log[i].msg_size + SER_LOG_SIZE];
         serialize_log(&msg_log[i], data);
         msg_out.write(data, msg_log[i].msg_size + SER_LOG_SIZE);
+        if (msg_log[i].recipient)
+        {
+            if (msg_log[i].fail_v_sender[id] == fail_v[id]) // TODO: make this work if another failure occurs before it is removed
+            {
+                // remove the entry from the set
+                vector<int> merged_time_fail_v;
+                merged_time_fail_v = msg_log[i].time_v_sender;
+                merged_time_fail_v.insert(merged_time_fail_v.end(), msg_log[i].fail_v_sender.begin(), msg_log[i].fail_v_sender.end());
+                arrived_msgs.erase(merged_time_fail_v);
+            }
+        }
     }
     checkpoints.push_back(msg_cnt);
     ck_time_v.push_back(time_v);
