@@ -65,6 +65,23 @@ static int odbierz(int socket) // receive fd from socket
 void signalHandler(int signum)
 {
     cout << "Interrupt signal (" << signum << ") received.\n";
+    switch (signum)
+    {
+    case EPIPE:
+        // cerr << "EPIPE: Broken pipe" << endl;
+        return;
+    case SIGPIPE:
+        // cerr << "SIGPIPE: Broken pipe" << endl;
+        return;
+
+    default:
+        break;
+    }
+    if (signum == EPIPE)
+    {
+
+        return;
+    }
 
     // cleanup and close up stuff here
     // terminate program
@@ -94,15 +111,17 @@ pid_t fork_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2],
     if (c_pid == -1)
     {
         perror("failure to fork new process");
-        return -1;
+        exit(0);
     }
     else if (c_pid == 0)
     { // child process
         signal(SIGINT, signalHandler);
+        signal(SIGPIPE, signalHandler);
+        signal(EPIPE, signalHandler);
         is_active = true;
         msg_process(process_nr, fildes, sv, restart);
         cout << "child EXIT" << endl;
-        return -1;
+        exit(0);
     }
     return c_pid;
 }
@@ -117,7 +136,8 @@ pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2], int sv
     close(fildes[process_nr][1]);
     if (make_pipe(fildes[process_nr], sv[process_nr]) == -1)
     {
-        return -1;
+        perror("failed to create pipes");
+        exit(1);
     }
 
     sleep(3);
@@ -260,7 +280,7 @@ int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
     int ret = state->send_msg(input, process_id, sizeof(msg_t));
     if (ret < 0)
     {
-        perror("write to pipe");
+        // perror("write to pipe");
         return -1;
     }
     return 0;
@@ -351,7 +371,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             if (buffer.type == MSG)
             {
                 msg_cnt++;
-                // cout << process_nr << " " << buffer.ptp_msg.msg << endl;
+                cout << process_nr << " " << buffer.ptp_msg.msg << endl;
                 continue;
             }
             else if (buffer.type == ERR)
@@ -386,11 +406,11 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
                 // TODO: err checking
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        if (process_nr == 0 && msg_nr % 100 == 0)
-        {
-            state.signal_commit();
-        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // if (process_nr == 0 && msg_nr % 100 == 0)
+        // {
+        //     state.signal_commit();
+        // }
 
         if (!is_active || msg_nr == 3050)
         {
