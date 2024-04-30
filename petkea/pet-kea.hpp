@@ -18,11 +18,7 @@
 #include <filesystem>
 #include <bits/stdc++.h>
 
-// using namespace std;
-
 const int MAX_LOG = 500;
-
-// const int STATE_SIZE =
 
 // Hash function
 struct vector_hash
@@ -188,7 +184,18 @@ namespace Pet_kea
          */
         bool check_duplicate(struct msg_t *msg);
 
+        /**
+         * @brief Checks for duplicate control messages in the fail log.
+         * @param log The fail log structure containing control messages to be checked.
+         * @return True if duplicate control messages are found, false otherwise.
+         */
         bool check_duplicate_ctrl(struct fail_log_t log);
+
+        /**
+         * @brief Checks for duplicate commit messages in the message log.
+         * @param l_msg Pointer to the message log structure containing commit messages to be checked.
+         * @return True if duplicate commit messages are found, false otherwise.
+         */
         bool check_duplicate_commit(struct msg_log_t *l_msg);
 
         /**
@@ -198,6 +205,12 @@ namespace Pet_kea
          */
         bool check_orphaned(struct msg_t *msg);
 
+        /**
+         * @brief Finds the next_checkpoint variable after removing certain checkpoints.
+         * @param removed_checkpoints A vector containing the IDs of checkpoints that have been removed.
+         * @param curr_next_checkpoint The ID of the current next_checkpoint variable before removal.
+         * @return The ID of the next checkpoint after considering the removed checkpoints.
+         */
         int next_checkpoint_after_rem(std::vector<int> removed_checkpoints, int curr_next_checkpoint);
 
         /**
@@ -208,13 +221,32 @@ namespace Pet_kea
          */
         int rem_log_entries(std::vector<int> to_remove, int final_index);
 
+        /**
+         * @brief Removes checkpoints.
+         * @param to_remove A vector containing the IDs of checkpoints to be removed.
+         */
         void rem_checkpoints(std::vector<int> to_remove);
+
+        /**
+         * @brief Retrieves the next checkpoint.
+         * @param ptr A pointer to the current checkpoint.
+         * @return A pointer to the next checkpoint.
+         */
         int *next_checkpoint(int *ptr);
 
+        /**
+         * @brief Serializes a commit message.
+         * @param msg Pointer to the commit message structure to be serialized.
+         * @param data Pointer to the character array where the serialized data will be stored.
+         */
         void serialize_commit(struct comm_msg_t *msg, char *data);
 
+        /**
+         * @brief Deserializes a commit message.
+         * @param data Pointer to the character array containing the serialized commit message.
+         * @param msg Pointer to the commit message structure where the deserialized data will be stored.
+         */
         void deserialize_commit(char *data, struct comm_msg_t *msg);
-
         /**
          * @brief Serializes a control message structure into a character array.
          * @param msg Pointer to the control message structure to be serialized.
@@ -258,7 +290,16 @@ namespace Pet_kea
          */
         int deserialize_log(char *data, struct msg_log_t *log);
 
+        /**
+         * @brief Serializes the state data.
+         * @param data A pointer to the character array where the serialized state data will be stored.
+         */
         void serialize_state(char *data);
+
+        /**
+         * @brief Deserializes the state data.
+         * @param data A pointer to the character array containing the serialized state data.
+         */
         void deserialize_state(char *data);
 
         /**
@@ -269,6 +310,12 @@ namespace Pet_kea
          */
         int store_msg(struct msg_t *msg, int recipient);
 
+        /**
+         * @brief Commits a list of messages.
+         * @param committed_msgs A vector containing the IDs of messages to be committed.
+         * @return Returns 0 if the messages are successfully committed.
+         *         Returns a non-zero value if an error occurs.
+         */
         int commit_msgs(std::vector<int> committed_msgs);
 
         /**
@@ -278,10 +325,27 @@ namespace Pet_kea
          */
         int rollback(struct ctrl_msg_t *msg);
 
+        /**
+         * @brief Sends a COMM2 message to the target with the specified ID.
+         * @param target_id The ID of the target to which the commit message will be sent.
+         * @return Returns 0 if the commit message is successfully sent. Returns a non-zero value if an error occurs.
+         */
         int send_commit(int target_id);
 
+        /**
+         * @brief Commits all messages that can be safely committed
+         * @param is_instigator A boolean value indicating whether the calling function
+         *                      is the initiator of the commit procedure (true) or not (false).
+         * @return Returns 0 if the action is successfully committed.
+         *         Returns a non-zero value if an error occurs.
+         */
         int commit(bool is_instigator);
 
+        /**
+         * @brief Removes all messages and checkpoints that can safely be removed
+         * @return Returns 0 if the data is successfully removed.
+         *         Returns a non-zero value if an error occurs.
+         */
         int remove_data();
 
     public:
