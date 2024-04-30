@@ -257,9 +257,9 @@ namespace Pet_kea
     public:
         const int SER_LOG_SIZE = 3 * sizeof(int) + time_v.size() * 3 * sizeof(int);
         inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + time_v.size() * sizeof(int))); };
-        inline int SER_STATE_SIZE(int arrived_msgs_size, int arrived_ctrl_size)
+        inline int SER_STATE_SIZE(int arrived_ctrl_size)
         {
-            return (4 + (time_v.size()) + ((arrived_msgs_size)*time_v.size() * 2) + (3 * arrived_ctrl_size)) * sizeof(int);
+            return (3 + (time_v.size()) + (3 * arrived_ctrl_size)) * sizeof(int);
         };
 
         const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
