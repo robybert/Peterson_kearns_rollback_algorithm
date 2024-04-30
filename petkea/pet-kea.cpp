@@ -868,7 +868,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 
             for (int i = checkpoints[size - to_remove]; i < checkpoints.back(); i++)
             {
-                bytes_to_remove += msg_log[i].msg_size * sizeof(char); // TODO: check the size
+                bytes_to_remove += msg_log[i].msg_size * sizeof(char);
             }
 
             char filename[32];
@@ -985,7 +985,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
             }
 
             // retransmit send events that have not arrived RB.3.3
-            if (!msg_log[i].recipient && msg_log[i].process_id == msg->sending_process_nr && !(msg->recieved_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_sender[id], msg_log[i].fail_v_sender)))) // TODO: check if contains is working
+            if (!msg_log[i].recipient && msg_log[i].process_id == msg->sending_process_nr && !(msg->recieved_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_sender[id], msg_log[i].fail_v_sender))))
             {
                 cout << id << " retransmitted msg Tj: " << msg_log[i].time_v_sender[id] << "fail_v: ";
                 for (int j = 0; j < (int)fail_v.size(); j++)
@@ -1342,7 +1342,7 @@ int Pet_kea::State::remove_data()
             }
             continue;
         }
-        if (msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min) // tODO: fix removing Ts and Fs from arrived messages
+        if (msg_log[i].recipient && ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min) // TODO: fix removing Ts and Fs from arrived messages
         {
             // remove form msg_log
             indices_to_remove.push_back(i);
@@ -1350,7 +1350,7 @@ int Pet_kea::State::remove_data()
             continue;
         }
 
-        if (!msg_log[i].recipient && committed_recieve_events.contains(temp_vec)) // TODO: check comparing vectors
+        if (!msg_log[i].recipient && committed_recieve_events.contains(temp_vec))
         {
             if (ck_time_v.at(msg_log[i].next_checkpoint) <= time_v_min)
             {
@@ -1439,7 +1439,6 @@ int Pet_kea::State::commit(bool is_instigator)
     msg.sending_process_nr = id;
     vector<int> merged_vector;
 
-    // for (int i = committed_msgs.back(); !committed_msgs.empty(); i = committed_msgs.back())
     int it;
     while (!committed_msgs.empty())
     {
@@ -1453,7 +1452,6 @@ int Pet_kea::State::commit(bool is_instigator)
         }
 
         committed_msgs.pop_back();
-        // i = committed_msgs.back();
     }
 
     remove_v[id] = true;
@@ -1680,7 +1678,6 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
 
             commit(false);
             committed_recieve_events.insert(comm3_msg.committed_msgs.begin(), comm3_msg.committed_msgs.end());
-            // committed_msg_set.insert(comm3_msg.committed_msgs.begin(), comm3_msg.committed_msgs.end());
             remove_v[comm3_msg.sending_process_nr] = true;
             return 4;
         }
