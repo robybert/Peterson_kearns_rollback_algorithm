@@ -852,40 +852,20 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
     {
         //  RB.2.1      remove ckeckpoints T^i > crT^i, set state and T to latest ckeckpoint, replays
-        int prev_cnt = msg_cnt, to_remove = 0, size = ck_time_v.size() - 1, checkpoint_T_i = ck_time_v.back().at(msg->sending_process_nr);
+        vector<int> checkpoints_to_remove;
 
-        while (checkpoint_T_i > msg->log_entry.res_time)
+        for (int i = 0; i < (int)checkpoints.size(); i++)
         {
-            checkpoint_T_i = ck_time_v.at(size - to_remove).at(msg->sending_process_nr);
-            to_remove++;
+            if (ck_time_v[i].at(msg->sending_process_nr) > msg->log_entry.res_time)
+                checkpoints_to_remove.push_back(i);
         }
-        if (to_remove > 1)
-        {
-            to_remove--;
 
-            // remove the to_remove checkpoints
-            int bytes_to_remove = to_remove * (sizeof(int) * (3 + time_v.size())) + (checkpoints.back() - checkpoints[size - to_remove]) * SER_LOG_SIZE;
-
-            for (int i = checkpoints[size - to_remove]; i < checkpoints.back(); i++)
-            {
-                bytes_to_remove += msg_log[i].msg_size * sizeof(char);
-            }
-
-            char filename[32];
-            get_msg_filename(id, filename);
-            std::filesystem::path p;
-            int file_size = std::filesystem::file_size(std::filesystem::path(filename));
-            file_size -= bytes_to_remove;
-            truncate(filename, file_size);
-            for (int i = 0; i < to_remove; i++)
-            {
-                checkpoints.pop_back();
-                ck_time_v.pop_back();
-            }
-        }
+        rem_checkpoints(checkpoints_to_remove);
 
         // set state and time_v to latestck
+        int prev_cnt = msg_cnt;
         msg_cnt = checkpoints.back();
+        int temp_msg_cnt = msg_cnt;
         time_v = ck_time_v.back();
 
         // replay messages
@@ -940,14 +920,14 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         fail_out.write((char *)&entry, sizeof(fail_log_t));
         fail_out.close();
 
-        fail_log.push_back(fail_log_t(msg->sending_process_nr, msg->log_entry.fail_nr, msg->log_entry.res_time));
+        fail_log.push_back(entry);
 
         //  RB.2.3
         fail_v[msg->sending_process_nr] = msg->log_entry.fail_nr;
 
         // RB.3
 
-        for (int i = 0; i < prev_cnt; i++) // TODO: check if you have to go from the beginning
+        for (int i = temp_msg_cnt; i < prev_cnt; i++) // TODO: check if you have to go from the beginning
         {
             // move recv event to the back??? TODO: ask if this is what is meant with RB.3.2
             if (msg_log[i].recipient && msg_log[i].time_v_reciever[msg->sending_process_nr] > msg->log_entry.res_time)
@@ -1015,9 +995,8 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         }
         if (!indices_to_rem.empty())
         {
-            prev_cnt = msg_cnt;
-            msg_cnt -= indices_to_rem.size();
-            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt);
+
+            msg_cnt = rem_log_entries(indices_to_rem, msg_cnt);
         }
 
         checkpoint();
