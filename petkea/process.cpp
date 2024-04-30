@@ -407,10 +407,6 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        if (process_nr == 0 && msg_nr % 100 == 0)
-        {
-            state.signal_commit();
-        }
 
         if (!is_active || msg_nr == 3050)
         {
