@@ -573,7 +573,7 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
     }
 
     msg_cnt++;
-    if (msg_cnt % SAVE_CNT == 0)
+    if (automatic_checkpointing && msg_cnt % SAVE_CNT == 0)
         checkpoint();
 
     return 0;
@@ -744,6 +744,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
                                                                                      time_v(process_cnt, 0),
                                                                                      fail_v(process_cnt, 0),
                                                                                      msg_cnt(0),
+                                                                                     automatic_checkpointing(false),
                                                                                      arrived_msgs()
 
 {
@@ -916,6 +917,10 @@ Pet_kea::State::~State()
     free(fildes);
     msg_out.close();
     commit_out.close();
+}
+int Pet_kea::State::get_msg_cnt()
+{
+    return msg_cnt;
 }
 
 int Pet_kea::State::checkpoint()

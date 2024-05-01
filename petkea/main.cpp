@@ -36,17 +36,15 @@ int main(int argc, char const *argv[])
         cout << "parent created child " << i << " with c_pid " << c_pid[i] << endl;
     }
 
-    int to_restart = 1;
+    int to_restart = 0;
 
-    // rng for time to wait
-    this_thread::sleep_for(chrono::seconds(16));
+    for (int i = 0; i < ROLLBACKS_TO_PERFORM; i++)
+    {
+        this_thread::sleep_for(chrono::seconds(10));
 
-    // restart the selected process
-    c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
-
-    this_thread::sleep_for(chrono::seconds(16));
-
-    c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
+        // restart the selected process
+        c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
+    }
 
     while (0)
     {

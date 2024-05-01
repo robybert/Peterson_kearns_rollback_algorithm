@@ -28,11 +28,13 @@
 #include <time.h>
 #include <thread>
 
-const int CHILDREN = 3;
+const int CHILDREN = 2;
 #include "pet-kea.hpp"
 
 const int SER_ERR_MSG_SIZE = sizeof(int) * 5;
 const int SEED = 555432;
+const int ROLLBACKS_TO_PERFORM = 20;
+const int CHECKPOINTS_EVERY = 50;
 
 typedef enum message_type
 {
@@ -134,7 +136,7 @@ int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state);
  * @param state The state of the peterson-kearns class
  * @return Returns the pid of the created process, for failure -1
  */
-int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state);
+int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state, int64_t *rollback_duration_arr);
 
 /**
  * @brief Lets processes send messages to eachother

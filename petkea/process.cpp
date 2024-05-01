@@ -4,6 +4,8 @@
 using namespace std;
 
 bool is_active;
+int rollback_cnt = 0;
+int send_cnt = 0;
 
 static void wyslij(int sending_process_nr, int socket, int fd) // send fd by socket
 {
@@ -277,7 +279,17 @@ int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
 {
     char input[sizeof(msg_t)];
     serialize(msg, input);
-    int ret = state->send_msg(input, process_id, sizeof(msg_t));
+    int ret;
+
+    ret = state->send_msg(input, process_id, sizeof(msg_t));
+    send_cnt++;
+
+    if (send_cnt % CHECKPOINTS_EVERY == 0)
+    {
+
+        state->checkpoint();
+    }
+
     if (ret < 0)
     {
         // perror("write to pipe");
@@ -286,11 +298,20 @@ int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
     return 0;
 }
 
-int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
+int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state, int64_t *rollback_duration_arr)
 {
     char output[sizeof(msg_t)];
 
-    int ret = state->recv_msg(fildes, output, sizeof(msg_t));
+    int ret;
+    auto start_ck = chrono::high_resolution_clock::now();
+    ret = state->recv_msg(fildes, output, sizeof(msg_t));
+    auto stop_ck = chrono::high_resolution_clock::now();
+    if (ret == 2)
+    {
+        auto duration_ck = chrono::duration_cast<chrono::microseconds>(stop_ck - start_ck);
+        rollback_duration_arr[rollback_cnt] = duration_ck.count();
+        rollback_cnt++;
+    }
 
     if (ret < 0)
     {
@@ -308,6 +329,9 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
 
 void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], bool restart)
 {
+
+    int64_t restart_duration;
+    int64_t rollback_duration_arr[20];
     cout << "msg_process " << process_nr << " started with pid = " << getpid() << endl;
 
     fd_set current_fd, ready_fd;
@@ -337,6 +361,26 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
     {
         // ret = send_err_msg(process_nr, fildes);
         send_err_msg_over_socket(process_nr, fildes, sv);
+        auto start_ck = chrono::high_resolution_clock::now();
+        Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
+        auto stop_ck = chrono::high_resolution_clock::now();
+        auto duration_ck = chrono::duration_cast<chrono::microseconds>(stop_ck - start_ck);
+        int64_t test = duration_ck.count();
+        restart_duration = test;
+        cout << process_nr << "restarted with msg_cnt = " << state.get_msg_cnt() << endl;
+
+        char restart_timing[32];
+
+        sprintf(restart_timing, "restart_timing_process_%d.csv", process_nr);
+        ofstream resrtart_out(restart_timing, ofstream::out | ofstream::app | ofstream::binary);
+        resrtart_out << to_string(restart_duration) << ",";
+
+        resrtart_out.close();
+    }
+    else
+    {
+
+        Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
     }
 
     Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
@@ -364,7 +408,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         else if (FD_ISSET(fildes[process_nr][0], &ready_fd))
         {
 
-            ret = recv_msg(&buffer, fildes[process_nr], &state);
+            ret = recv_msg(&buffer, fildes[process_nr], &state, rollback_duration_arr);
             if (ret >= 2)
                 continue;
 
@@ -397,20 +441,29 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         buffer.sending_process_nr = process_nr;
         memset(buffer.ptp_msg.msg, 0, 64);
         sprintf(buffer.ptp_msg.msg, "message number %d from process %d to process %d", msg_nr++, process_nr, dest_process_nr);
-        if (msg_nr <= 3000)
+
+        ret = send_msg(&buffer, dest_process_nr, &state);
+        if (ret == -1)
         {
-            ret = send_msg(&buffer, dest_process_nr, &state);
-            if (ret == -1)
-            {
-                is_busy[dest_process_nr] = true;
-                // TODO: err checking
-            }
+            is_busy[dest_process_nr] = true;
+            // TODO: err checking
         }
+
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        if (!is_active || msg_nr == 3050)
+        if (!is_active || rollback_cnt == ROLLBACKS_TO_PERFORM)
         {
             sleep(process_nr);
+
+            char rollback_timing[32];
+            sprintf(rollback_timing, "rollback_timing_process_%d.csv", process_nr);
+            ofstream rollback_out(rollback_timing, ofstream::out | ofstream::app | ofstream::binary);
+            for (size_t i = 0; i < 20; i++)
+            {
+                rollback_out << to_string(rollback_duration_arr[i]) << ",";
+            }
+            rollback_out << "\n";
+            rollback_out.close();
             return;
         }
     }

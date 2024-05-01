@@ -158,6 +158,8 @@ namespace Pet_kea
         std::vector<int> checkpoints;
         std::vector<std::vector<int>> ck_time_v;
 
+        bool automatic_checkpointing;
+
         std::vector<struct fail_log_t> fail_log;
         std::unordered_set<std::vector<int>, vector_hash> arrived_msgs;
         std::unordered_set<std::vector<int>, vector_hash> arrived_ctrl;
@@ -278,6 +280,8 @@ namespace Pet_kea
          * @brief Destructor for State class.
          */
         ~State();
+
+        int get_msg_cnt();
 
         /**
          * @brief Retrieves a message buffer.
