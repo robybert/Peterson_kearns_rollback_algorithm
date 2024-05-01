@@ -6,3 +6,4 @@ output
 *.json
 petkea/ouput.txt
 *.csv
+*.png
