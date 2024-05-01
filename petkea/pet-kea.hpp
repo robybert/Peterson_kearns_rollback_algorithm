@@ -20,7 +20,7 @@
 
 // using namespace std;
 
-const int MAX_LOG = 500;
+const int MAX_LOG = 5000;
 
 // const int STATE_SIZE =
 

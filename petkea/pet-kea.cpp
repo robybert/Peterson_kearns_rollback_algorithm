@@ -964,7 +964,7 @@ int Pet_kea::State::checkpoint()
     get_state_filename(id, filename);
 
     ofstream state_out(filename, ofstream::out | ofstream::binary | ofstream::trunc);
-    int state_size = SER_STATE_SIZE(arrived_msgs.size(), arrived_ctrl.size());
+    int state_size = SER_STATE_SIZE(arrived_ctrl.size());
 
     char data[state_size];
     serialize_state(data);
