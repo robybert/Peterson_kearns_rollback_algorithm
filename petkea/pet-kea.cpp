@@ -232,7 +232,7 @@ int Pet_kea::State::next_checkpoint_after_rem(vector<int> removed_checkpoints, i
 
 int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 {
-    cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
+    // cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
     msg_log_t *new_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
 
     vector<int>::iterator curr = to_remove.begin();
@@ -256,7 +256,7 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
     }
     free(msg_log);
     msg_log = new_log;
-    cout << id << " new msg_cnt:" << new_final_index << endl;
+    // cout << id << " new msg_cnt:" << new_final_index << endl;
     return new_final_index;
 }
 
@@ -750,7 +750,7 @@ void Pet_kea::State::send_ctrl()
         msg.recieved_cnt = cnt[i];
         msg.recieved_msgs = recvd_msgs[i];
 
-        print_ctrl_msg(&msg);
+        // print_ctrl_msg(&msg);
 
         // send the control message (serialize)
         size_t size = SER_SIZE_CTRL_MSG_T(msg.recieved_cnt, fail_v.size());
@@ -824,8 +824,8 @@ int Pet_kea::State::commit_msgs(vector<int> msgs)
 
 int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 {
-    cout << "entered the rollback section" << endl;
-    print_ctrl_msg(msg);
+    // cout << "entered the rollback section" << endl;
+    // print_ctrl_msg(msg);
 
     // RB.2
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
@@ -855,7 +855,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
             if (msg_log[i].time_v_sender[msg->sending_process_nr] <= msg->log_entry.res_time && msg_log[i].time_v_sender[id] >= ck_time_v.back()[id])
             {
                 // replay messages only inc time_v and msg_cnt
-                cout << "replayed msg" << endl;
+                // cout << "replayed msg" << endl;
                 msg_cnt++;
                 if (msg_log[i].recipient)
                 {
@@ -911,7 +911,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
             // move recv event to the back??? TODO: ask if this is what is meant with RB.3.2
             if (msg_log[i].recipient && msg_log[i].time_v_reciever[msg->sending_process_nr] > msg->log_entry.res_time)
             {
-                cout << id << " moved RECV event to the back" << endl;
+                // cout << id << " moved RECV event to the back" << endl;
                 if (msg_cnt >= MAX_LOG)
                 {
                     // increase max size
@@ -946,13 +946,13 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
             // retransmit send events that have not arrived RB.3.3
             if (!msg_log[i].recipient && msg_log[i].process_id == msg->sending_process_nr && !(msg->recieved_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_sender[id], msg_log[i].fail_v_sender))))
             {
-                cout << id << " retransmitted msg Tj: " << msg_log[i].time_v_sender[id] << "fail_v: ";
-                for (int j = 0; j < (int)fail_v.size(); j++)
-                {
-                    cout << msg_log[i].fail_v_sender[j] << ":";
-                }
+                // cout << id << " retransmitted msg Tj: " << msg_log[i].time_v_sender[id] << "fail_v: ";
+                // for (int j = 0; j < (int)fail_v.size(); j++)
+                // {
+                //     cout << msg_log[i].fail_v_sender[j] << ":";
+                // }
 
-                cout << " res_time: " << msg_log[i].time_v_sender[msg->sending_process_nr] << endl;
+                // cout << " res_time: " << msg_log[i].time_v_sender[msg->sending_process_nr] << endl;
                 struct msg_t retransmit_msg;
                 retransmit_msg.msg_type = MSG;
                 retransmit_msg.sending_process_nr = id;
@@ -1454,20 +1454,20 @@ int Pet_kea::State::commit(bool is_instigator)
         msg.committed_msgs = committed_set[i];
         msg.committed_cnt = committed_set[i].size();
 
-        if (is_instigator)
-        {
+        // if (is_instigator)
+        // {
 
-            cout << id << " sending comm3 to " << i << "commit_cnt: " << msg.committed_cnt << "time_v_min:";
-            for (int j = 0; j < (int)time_v.size(); j++)
-            {
-                cout << msg.time_v_min[j] << ":";
-            }
-            cout << endl;
-        }
-        else
-        {
-            cout << id << " sending comm4 to " << i << "commit_cnt: " << msg.committed_cnt << endl;
-        }
+        //     cout << id << " sending comm3 to " << i << "commit_cnt: " << msg.committed_cnt << "time_v_min:";
+        //     for (int j = 0; j < (int)time_v.size(); j++)
+        //     {
+        //         cout << msg.time_v_min[j] << ":";
+        //     }
+        //     cout << endl;
+        // }
+        // else
+        // {
+        //     cout << id << " sending comm4 to " << i << "commit_cnt: " << msg.committed_cnt << endl;
+        // }
 
         serialize_commit(&msg, data);
 
@@ -1617,7 +1617,7 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
         }
         else if (COMM1 == (msg_type)*q)
         {
-            cout << id << " entered COMM1" << endl;
+            // cout << id << " entered COMM1" << endl;
             q++;
             send_commit(*q);
             free(data);
@@ -1625,7 +1625,7 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
         }
         else if (COMM2 == (msg_type)*q)
         {
-            cout << id << " entered COMM2" << endl;
+            // cout << id << " entered COMM2" << endl;
 
             ret = read(fildes[0], extra_data, SER_COMM2_SIZE - init_read_size);
             struct comm_msg_t comm2_msg;
@@ -1643,7 +1643,7 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
         }
         else if (COMM3 == (msg_type)*q)
         {
-            cout << id << " entered COMM3" << endl;
+            // cout << id << " entered COMM3" << endl;
             q++;
             q++;
             char *comm3_data = (char *)malloc(SER_COMM3_SIZE(*q));
@@ -1671,7 +1671,7 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
         }
         else if (COMM4 == (msg_type)*q) // TODO: write this
         {
-            cout << id << " entered COMM4" << endl;
+            // cout << id << " entered COMM4" << endl;
             q++;
             q++;
             char *comm4_data = (char *)malloc(SER_COMM4_SIZE(*q));
