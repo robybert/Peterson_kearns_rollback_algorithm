@@ -799,7 +799,7 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
     }
 
     msg_cnt++;
-    if (msg_cnt % SAVE_CNT == 0)
+    if (automatic_checkpoint && msg_cnt % SAVE_CNT == 0)
         checkpoint();
 
     return 0;
@@ -989,6 +989,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
                                                                                      msg_cnt(0),
                                                                                      commit_v(process_cnt, false),
                                                                                      remove_v(process_cnt, false),
+                                                                                     automatic_checkpoint(false),
                                                                                      arrived_msgs()
 
 {
@@ -1661,6 +1662,11 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
             commit(false);
             committed_recieve_events.insert(comm3_msg.committed_msgs.begin(), comm3_msg.committed_msgs.end());
             remove_v[comm3_msg.sending_process_nr] = true;
+            if (remove_v == vector<bool>(time_v.size(), true))
+            {
+                remove_v.flip();
+                remove_data();
+            }
             return 4;
         }
         else if (COMM4 == (msg_type)*q) // TODO: write this

@@ -18,7 +18,7 @@
 #include <filesystem>
 #include <bits/stdc++.h>
 
-const int MAX_LOG = 500;
+const int MAX_LOG = 1000;
 
 // Hash function
 struct vector_hash
@@ -168,6 +168,8 @@ namespace Pet_kea
         std::vector<bool> remove_v;
         std::vector<int> checkpoints;
         std::vector<std::vector<int>> ck_time_v;
+
+        bool automatic_checkpoint;
 
         std::vector<struct fail_log_t> fail_log;
         std::unordered_set<std::vector<int>, vector_hash> arrived_msgs;

@@ -3,7 +3,18 @@
 
 using namespace std;
 
+#include <inttypes.h>
+
 bool is_active;
+
+int send_cnt = 0;
+int recv_cnt = 0;
+int checkpoint_cnt = 0;
+
+const int MSGS_TO_SEND = 5000;
+const int MSGS_TO_RECV = 5000;
+const int CHECKPOINTS_EVERY = 50;
+const int ROLLBACKS_TO_PERFORM = 5;
 
 static void wyslij(int sending_process_nr, int socket, int fd) // send fd by socket
 {
@@ -273,11 +284,35 @@ void deserialize(char *data, struct msg_t *msg)
     }
 }
 
-int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
+int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state, int64_t *send_duration_arr, int64_t *checkpoint_duration_arr)
 {
     char input[sizeof(msg_t)];
     serialize(msg, input);
-    int ret = state->send_msg(input, process_id, sizeof(msg_t));
+    int ret;
+
+    if (send_cnt < MSGS_TO_SEND)
+    {
+        auto start = chrono::high_resolution_clock::now();
+        ret = state->send_msg(input, process_id, sizeof(msg_t));
+        auto stop = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+        send_duration_arr[send_cnt] = duration.count();
+        send_cnt++;
+        if (send_cnt % CHECKPOINTS_EVERY == 0)
+        {
+            auto start_ck = chrono::high_resolution_clock::now();
+            state->checkpoint();
+            auto stop_ck = chrono::high_resolution_clock::now();
+            auto duration_ck = chrono::duration_cast<chrono::microseconds>(stop_ck - start_ck);
+            int64_t test = duration_ck.count();
+            checkpoint_duration_arr[checkpoint_cnt] = test;
+            checkpoint_cnt++;
+        }
+    }
+    else
+    {
+        ret = state->send_msg(input, process_id, sizeof(msg_t));
+    }
     if (ret < 0)
     {
         // perror("write to pipe");
@@ -286,11 +321,24 @@ int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
     return 0;
 }
 
-int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
+int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state, int64_t *recv_duration_arr)
 {
     char output[sizeof(msg_t)];
 
-    int ret = state->recv_msg(fildes, output, sizeof(msg_t));
+    int ret;
+    if (recv_cnt < MSGS_TO_RECV)
+    {
+        auto start = chrono::high_resolution_clock::now();
+        ret = state->recv_msg(fildes, output, sizeof(msg_t));
+        auto stop = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+        recv_duration_arr[recv_cnt] = duration.count();
+        recv_cnt++;
+    }
+    else
+    {
+        ret = state->recv_msg(fildes, output, sizeof(msg_t));
+    }
 
     if (ret < 0)
     {
@@ -308,6 +356,12 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state)
 
 void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], bool restart)
 {
+
+    int64_t send_duration_arr[MSGS_TO_SEND];
+    int64_t recv_duration_arr[MSGS_TO_RECV];
+    // int64_t rollback_duration_arr[ROLLBACKS_TO_PERFORM];
+    int64_t msg_cnt_during_rollback[ROLLBACKS_TO_PERFORM];
+    int64_t checkpoint_duration_array[MSGS_TO_SEND / CHECKPOINTS_EVERY];
     cout << "msg_process " << process_nr << " started with pid = " << getpid() << endl;
 
     fd_set current_fd, ready_fd;
@@ -364,7 +418,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         else if (FD_ISSET(fildes[process_nr][0], &ready_fd))
         {
 
-            ret = recv_msg(&buffer, fildes[process_nr], &state);
+            ret = recv_msg(&buffer, fildes[process_nr], &state, recv_duration_arr);
             if (ret >= 2)
                 continue;
 
@@ -397,24 +451,67 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         buffer.sending_process_nr = process_nr;
         memset(buffer.ptp_msg.msg, 0, 64);
         sprintf(buffer.ptp_msg.msg, "message number %d from process %d to process %d", msg_nr++, process_nr, dest_process_nr);
-        if (msg_nr <= 3000)
+
+        ret = send_msg(&buffer, dest_process_nr, &state, send_duration_arr, checkpoint_duration_array);
+        if (ret == -1)
         {
-            ret = send_msg(&buffer, dest_process_nr, &state);
-            if (ret == -1)
-            {
-                is_busy[dest_process_nr] = true;
-                // TODO: err checking
-            }
+            is_busy[dest_process_nr] = true;
+            // TODO: err checking
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        if (process_nr == 0 && msg_nr % 100 == 0)
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (process_nr == 0 && msg_nr % 200 == 0)
         {
             state.signal_commit();
         }
 
-        if (!is_active || msg_nr == 3050)
+        if (!is_active || msg_nr == MSGS_TO_SEND + 50)
         {
             sleep(process_nr);
+            char send_timing[32];
+            sprintf(send_timing, "send_timing_process_%d.csv", process_nr);
+            ofstream send_out(send_timing, ofstream::out | ofstream::app | ofstream::binary);
+            for (size_t i = 0; i < MSGS_TO_SEND; i++)
+            {
+                send_out << to_string(send_duration_arr[i]) << ", ";
+            }
+            send_out << "\n";
+
+            send_out.close();
+            char recv_timing[32];
+            sprintf(recv_timing, "recv_timing_process_%d.csv", process_nr);
+            ofstream recv_out(recv_timing, ofstream::out | ofstream::app | ofstream::binary);
+            for (size_t i = 0; i < MSGS_TO_RECV; i++)
+            {
+                recv_out << to_string(recv_duration_arr[i]) << ",";
+            }
+            recv_out << "\n";
+            recv_out.close();
+
+            char check_timing[32];
+            sprintf(check_timing, "check_timing_process_%d.csv", process_nr);
+            ofstream check_out(check_timing, ofstream::out | ofstream::app | ofstream::binary);
+            for (size_t i = 0; i < (MSGS_TO_RECV / CHECKPOINTS_EVERY); i++)
+            {
+                check_out << to_string(checkpoint_duration_array[i]) << ",";
+            }
+            check_out << "\n";
+            check_out.close();
+
+            // char rollback_timing[32];
+            // sprintf(rollback_timing, "send_timing_process_%d.csv", process_nr);
+            // ofstream rollback_out(rollback_timing, ofstream::out | ofstream::app | ofstream::binary);
+            // for (size_t i = 0; i < MSGS_TO_SEND; i++)
+            // {
+            //     rollback_out << rollback_duration_arr[i] << ",";
+            // }
+            // rollback_out << "\n";
+            // for (size_t i = 0; i < MSGS_TO_SEND; i++)
+            // {
+            //     rollback_out << msg_cnt_during_rollback[i] << ",";
+            // }
+            // rollback_out << "\n";
+            // rollback_out.close();
             return;
         }
     }
