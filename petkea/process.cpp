@@ -311,7 +311,7 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state, int64_t *r
 
     int ret;
     auto start_ck = chrono::high_resolution_clock::now();
-    ret = state->recv_msg(fildes, output, sizeof(msg_t));
+    ret = state->recv_msg(fildes, output, sizeof(msg_t), rollback_duration_arr);
     auto stop_ck = chrono::high_resolution_clock::now();
     if (ret == 2)
     {
