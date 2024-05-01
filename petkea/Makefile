@@ -20,3 +20,5 @@ clean:
 
 dat:
 	rm *.dat
+csv:
+	rm *.csv
