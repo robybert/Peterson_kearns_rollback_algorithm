@@ -919,6 +919,11 @@ Pet_kea::State::~State()
     commit_out.close();
 }
 
+int Pet_kea::State::get_msg_cnt()
+{
+    return msg_cnt;
+}
+
 int Pet_kea::State::checkpoint()
 {
     // write state and time vector at the start of the file

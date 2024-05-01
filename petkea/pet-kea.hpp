@@ -281,6 +281,8 @@ namespace Pet_kea
          */
         ~State();
 
+        int get_msg_cnt();
+
         /**
          * @brief Retrieves a message buffer.
          * This function retrieves the message buffer at the specified index `i`.
