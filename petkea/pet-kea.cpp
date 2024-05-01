@@ -573,7 +573,7 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
     }
 
     msg_cnt++;
-    if (msg_cnt % SAVE_CNT == 0)
+    if (automatic_checkpointing && msg_cnt % SAVE_CNT == 0)
         checkpoint();
 
     return 0;
@@ -744,6 +744,7 @@ Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restar
                                                                                      time_v(process_cnt, 0),
                                                                                      fail_v(process_cnt, 0),
                                                                                      msg_cnt(0),
+                                                                                     automatic_checkpointing(false),
                                                                                      arrived_msgs()
 
 {
@@ -964,7 +965,7 @@ int Pet_kea::State::checkpoint()
     get_state_filename(id, filename);
 
     ofstream state_out(filename, ofstream::out | ofstream::binary | ofstream::trunc);
-    int state_size = SER_STATE_SIZE(arrived_msgs.size(), arrived_ctrl.size());
+    int state_size = SER_STATE_SIZE(arrived_ctrl.size());
 
     char data[state_size];
     serialize_state(data);

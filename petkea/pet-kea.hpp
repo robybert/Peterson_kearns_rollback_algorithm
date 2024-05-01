@@ -20,7 +20,7 @@
 
 // using namespace std;
 
-const int MAX_LOG = 500;
+const int MAX_LOG = 15000;
 
 // const int STATE_SIZE =
 
@@ -157,6 +157,8 @@ namespace Pet_kea
 
         std::vector<int> checkpoints;
         std::vector<std::vector<int>> ck_time_v;
+
+        bool automatic_checkpointing;
 
         std::vector<struct fail_log_t> fail_log;
         std::unordered_set<std::vector<int>, vector_hash> arrived_msgs;
