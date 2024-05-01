@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -O3 -g -std=c++20 
+CFLAGS =  -g -std=c++20 
 
 
 pet: pet-kea.o

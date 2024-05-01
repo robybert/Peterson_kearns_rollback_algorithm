@@ -525,7 +525,7 @@ void Pet_kea::State::send_ctrl()
         msg.recieved_cnt = cnt[i];
         msg.recieved_msgs = recvd_msgs[i];
 
-        print_ctrl_msg(&msg);
+        // print_ctrl_msg(&msg);
 
         // send the control message (serialize)
         size_t size = SER_SIZE_CTRL_MSG_T(msg.recieved_cnt);
@@ -581,8 +581,8 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
 
 int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 {
-    cout << "entered the rollback section" << endl;
-    print_ctrl_msg(msg);
+    // cout << "entered the rollback section" << endl;
+    // print_ctrl_msg(msg);
 
     // RB.2
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)

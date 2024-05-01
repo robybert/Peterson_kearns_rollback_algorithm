@@ -321,7 +321,7 @@ namespace Pet_kea
          * @param size Size of the buffer.
          * @return 0 on success, 1 after recieving a VOID msg, 2 after recieving a CTRL msg, 3 after recieving a duplicate or orphaned message that was discarded, -1 on failure.
          */
-        int recv_msg(int fildes[2], char *output, int size, int64_t *rollback_duration_arr);
+        int recv_msg(int fildes[2], char *output, int size);
 
         /**
          * @brief Sends control message to other processes to indicate that a failure occured.

@@ -282,7 +282,7 @@ void deserialize(char *data, struct msg_t *msg)
     }
 }
 
-int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state, int64_t *send_duration_arr, int64_t *checkpoint_duration_arr)
+int send_msg(struct msg_t *msg, int process_id, Pet_kea::State *state)
 {
     char input[sizeof(msg_t)];
     serialize(msg, input);
@@ -311,7 +311,7 @@ int recv_msg(struct msg_t *msg, int fildes[2], Pet_kea::State *state, int64_t *r
 
     int ret;
     auto start_ck = chrono::high_resolution_clock::now();
-    ret = state->recv_msg(fildes, output, sizeof(msg_t), rollback_duration_arr);
+    ret = state->recv_msg(fildes, output, sizeof(msg_t));
     auto stop_ck = chrono::high_resolution_clock::now();
     if (ret == 2)
     {
@@ -415,14 +415,14 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         else if (FD_ISSET(fildes[process_nr][0], &ready_fd))
         {
 
-            ret = recv_msg(&buffer, fildes[process_nr], &state);
+            ret = recv_msg(&buffer, fildes[process_nr], &state, rollback_duration_arr);
             if (ret >= 2)
                 continue;
 
             if (buffer.type == MSG)
             {
                 msg_cnt++;
-                // cout << process_nr << " " << buffer.ptp_msg.msg << endl;
+                cout << process_nr << " " << buffer.ptp_msg.msg << endl;
                 continue;
             }
             else if (buffer.type == ERR)
@@ -430,8 +430,8 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
 
                 cout << process_nr << " ERR recieved from " << buffer.sending_process_nr << endl;
                 // ret = recv_err_msg(&buffer, fildes);
-                if (ret != -1)
-                    is_busy[buffer.sending_process_nr] = false;
+
+                is_busy[buffer.sending_process_nr] = false;
                 // TODO: send confirmation
                 state.update_fd(buffer.sending_process_nr, new_fd);
                 fildes[buffer.sending_process_nr][0] = new_fd[0];
@@ -440,8 +440,9 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         }
 
         // start sending messages
-        while ((dest_process_nr = rand() % CHILDREN) == process_nr || is_busy[dest_process_nr])
+        if ((dest_process_nr = rand() % CHILDREN) == process_nr || is_busy[dest_process_nr])
         {
+            continue;
         }
 
         buffer.type = MSG;
@@ -456,14 +457,14 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             // TODO: err checking
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         if (!is_active || rollback_cnt == 20)
         {
             sleep(process_nr);
 
             char rollback_timing[32];
-            sprintf(rollback_timing, "send_timing_process_%d.csv", process_nr);
+            sprintf(rollback_timing, "rollback_timing_process_%d.csv", process_nr);
             ofstream rollback_out(rollback_timing, ofstream::out | ofstream::app | ofstream::binary);
             for (size_t i = 0; i < 20; i++)
             {

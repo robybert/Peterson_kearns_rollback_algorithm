@@ -39,13 +39,12 @@ int main(int argc, char const *argv[])
     int to_restart = 1;
 
     // rng for time to wait
-    this_thread::sleep_for(chrono::seconds(16));
 
     // restart the selected process
     // c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
     for (int i = 0; i < 20; i++)
     {
-        this_thread::sleep_for(chrono::seconds(10));
+        this_thread::sleep_for(chrono::seconds(20));
 
         c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
     }
