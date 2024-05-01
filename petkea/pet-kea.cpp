@@ -214,7 +214,7 @@ int Pet_kea::State::next_checkpoint_after_rem(vector<int> removed_checkpoints, i
 
 int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 {
-    cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
+    // cout << id << " old msg_cnt:" << final_index << " removing:" << to_remove.size() << endl;
     msg_log_t *new_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
 
     vector<int>::iterator curr = to_remove.begin();
@@ -238,7 +238,7 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
     }
     free(msg_log);
     msg_log = new_log;
-    cout << id << " new msg_cnt:" << new_final_index << endl;
+    // cout << id << " new msg_cnt:" << new_final_index << endl;
     return new_final_index;
 }
 
@@ -525,7 +525,7 @@ void Pet_kea::State::send_ctrl()
         msg.recieved_cnt = cnt[i];
         msg.recieved_msgs = recvd_msgs[i];
 
-        print_ctrl_msg(&msg);
+        // print_ctrl_msg(&msg);
 
         // send the control message (serialize)
         size_t size = SER_SIZE_CTRL_MSG_T(msg.recieved_cnt);
@@ -581,8 +581,8 @@ int Pet_kea::State::store_msg(struct msg_t *msg, int recipient)
 
 int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 {
-    cout << "entered the rollback section" << endl;
-    print_ctrl_msg(msg);
+    // cout << "entered the rollback section" << endl;
+    // print_ctrl_msg(msg);
 
     // RB.2
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
@@ -612,7 +612,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
             if (msg_log[i].time_v_sender[msg->sending_process_nr] <= msg->log_entry.res_time && msg_log[i].time_v_sender[id] >= ck_time_v.back()[id])
             {
                 // replay messages only inc time_v and msg_cnt
-                cout << "replayed msg" << endl;
+                // cout << "replayed msg" << endl;
                 msg_cnt++;
                 if (msg_log[i].recipient)
                 {
@@ -668,7 +668,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
             // move recv event to the back??? TODO: ask if this is what is meant with RB.3.2
             if (msg_log[i].recipient && msg_log[i].time_v_reciever[msg->sending_process_nr] > msg->log_entry.res_time)
             {
-                cout << id << " moved RECV event to the back" << endl;
+                // cout << id << " moved RECV event to the back" << endl;
                 if (msg_cnt >= MAX_LOG)
                 {
                     // increase max size
@@ -703,13 +703,13 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
             // retransmit send events that have not arrived RB.3.3
             if (!msg_log[i].recipient && msg_log[i].process_id == msg->sending_process_nr && !(msg->recieved_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_sender[id], msg_log[i].fail_v_sender))))
             {
-                cout << id << " retransmitted msg Tj: " << msg_log[i].time_v_sender[id] << "fail_v: ";
-                for (int j = 0; j < (int)fail_v.size(); j++)
-                {
-                    cout << msg_log[i].fail_v_sender[j] << ":";
-                }
+                // cout << id << " retransmitted msg Tj: " << msg_log[i].time_v_sender[id] << "fail_v: ";
+                // for (int j = 0; j < (int)fail_v.size(); j++)
+                // {
+                //     cout << msg_log[i].fail_v_sender[j] << ":";
+                // }
 
-                cout << " res_time: " << msg_log[i].time_v_sender[msg->sending_process_nr] << endl;
+                // cout << " res_time: " << msg_log[i].time_v_sender[msg->sending_process_nr] << endl;
                 struct msg_t retransmit_msg;
                 retransmit_msg.msg_type = MSG;
                 retransmit_msg.sending_process_nr = id;
