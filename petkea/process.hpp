@@ -28,7 +28,7 @@
 #include <time.h>
 #include <thread>
 
-const int CHILDREN = 2;
+const int CHILDREN = 8;
 #include "pet-kea.hpp"
 
 const int SER_ERR_MSG_SIZE = sizeof(int) * 5;

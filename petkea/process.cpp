@@ -142,7 +142,7 @@ pid_t restart_process(int process_nr, pid_t pid, int fildes[CHILDREN][2], int sv
         exit(1);
     }
 
-    sleep(3);
+    // sleep(3);
 
     new_c_pid = fork_process(process_nr, fildes, sv, true);
     return new_c_pid;
@@ -356,34 +356,29 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
     tv.tv_usec = 0;
     // if (process_nr == 1)
     //     restart = true;
+    char restart_timing[32];
+
+    sprintf(restart_timing, "restart_timing_process_%d.csv", process_nr);
+    ofstream restart_out(restart_timing, ofstream::out | ofstream::app | ofstream::binary);
 
     if (restart)
     {
         // ret = send_err_msg(process_nr, fildes);
         send_err_msg_over_socket(process_nr, fildes, sv);
-        auto start_ck = chrono::high_resolution_clock::now();
-        Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
-        auto stop_ck = chrono::high_resolution_clock::now();
+    }
+
+    auto start_ck = chrono::high_resolution_clock::now();
+    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
+    auto stop_ck = chrono::high_resolution_clock::now();
+    if (restart)
+    {
         auto duration_ck = chrono::duration_cast<chrono::microseconds>(stop_ck - start_ck);
         int64_t test = duration_ck.count();
         restart_duration = test;
-        cout << process_nr << "restarted with msg_cnt = " << state.get_msg_cnt() << endl;
 
-        char restart_timing[32];
-
-        sprintf(restart_timing, "restart_timing_process_%d.csv", process_nr);
-        ofstream resrtart_out(restart_timing, ofstream::out | ofstream::app | ofstream::binary);
-        resrtart_out << to_string(restart_duration) << ",";
-
-        resrtart_out.close();
+        restart_out << to_string(restart_duration) << ",";
+        // restart_out.flush();
     }
-    else
-    {
-
-        Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
-    }
-
-    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
 
     while (1)
     {
@@ -453,6 +448,13 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
 
         if (!is_active || rollback_cnt == ROLLBACKS_TO_PERFORM)
         {
+            if (process_nr == 1)
+            {
+                restart_out << state.get_msg_cnt() << "," << '\n';
+                restart_out.flush();
+                restart_out.close();
+                return;
+            }
             sleep(process_nr);
 
             char rollback_timing[32];

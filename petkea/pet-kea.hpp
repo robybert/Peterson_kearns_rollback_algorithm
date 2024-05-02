@@ -20,7 +20,7 @@
 
 // using namespace std;
 
-const int MAX_LOG = 5000;
+const int MAX_LOG = 15000;
 
 // const int STATE_SIZE =
 
@@ -266,6 +266,7 @@ namespace Pet_kea
 
         const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
         const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
+
         // const int MSG_CHECKPOINT_BYTESYZE = SAVE_CNT * (AVERAGE_MSG_BYTESIZE + (3 + 3 * time_v.size()) * sizeof(int));
         /**
          * @brief Constructor for State class.

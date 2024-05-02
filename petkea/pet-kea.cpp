@@ -642,7 +642,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         }
         if (!indices_to_rem.empty())
         {
-            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt);
+            msg_cnt = rem_log_entries(indices_to_rem, prev_cnt);
             indices_to_rem.clear();
         }
 
@@ -663,7 +663,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 
         // RB.3
 
-        for (int i = temp_msg_cnt; i < prev_cnt; i++) // TODO: check if you have to go from the beginning
+        for (int i = temp_msg_cnt; i < msg_cnt; i++) // TODO: check if you have to go from the beginning
         {
             // move recv event to the back??? TODO: ask if this is what is meant with RB.3.2
             if (msg_log[i].recipient && msg_log[i].time_v_reciever[msg->sending_process_nr] > msg->log_entry.res_time)

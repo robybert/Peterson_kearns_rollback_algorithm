@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
         cout << "parent created child " << i << " with c_pid " << c_pid[i] << endl;
     }
 
-    int to_restart = 0;
+    int to_restart = 1;
 
     for (int i = 0; i < ROLLBACKS_TO_PERFORM; i++)
     {
