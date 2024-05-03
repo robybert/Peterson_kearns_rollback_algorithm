@@ -1588,6 +1588,7 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
             free(c_data);
             free(data);
             if (check_duplicate_ctrl(c_msg.log_entry))
+            {
 
                 for (int i = 0; i < msg_cnt; i++)
                 {
@@ -1613,7 +1614,8 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
                     }
                 }
 
-            return 2;
+                return 2;
+            }
 
             rollback(&c_msg);
             return 2;
