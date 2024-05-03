@@ -42,6 +42,8 @@ struct vector_hash
     }
 };
 
+void get_msg_filename(int process_id, char msg_filename[32]);
+
 namespace Pet_kea
 {
 
@@ -164,7 +166,6 @@ namespace Pet_kea
         std::unordered_set<std::vector<int>, vector_hash> arrived_msgs;
         std::unordered_set<std::vector<int>, vector_hash> arrived_ctrl;
         std::ofstream msg_out;
-        std::ofstream commit_out;
 
         /**
          * @brief Checks if a message is a duplicate message.
@@ -267,7 +268,54 @@ namespace Pet_kea
         const int SER_MSG_SIZE = 3 * sizeof(int) + time_v.size() * 2 * sizeof(int);
         const int CONST_CHECKPOINT_BYTESIZE = (4 + 2 * time_v.size()) * sizeof(int);
 
-        // const int MSG_CHECKPOINT_BYTESYZE = SAVE_CNT * (AVERAGE_MSG_BYTESIZE + (3 + 3 * time_v.size()) * sizeof(int));
+        // Copy assignment operator
+        State &operator=(const State &other)
+        {
+            if (this != &other)
+            {
+                id = other.id;
+                time_v = other.time_v;
+                fail_v = other.fail_v;
+
+                if (fildes)
+                {
+                    for (int i = 0; i < (int)time_v.size(); i++)
+                    {
+                        free(fildes[i]);
+                    }
+                    free(fildes);
+                }
+                fildes = (int **)malloc((int)time_v.size() * sizeof(int *));
+                for (int i = 0; i < (int)time_v.size(); i++)
+                {
+                    fildes[i] = (int *)malloc(2 * sizeof(int));
+                    fildes[i][0] = other.fildes[i][0];
+                    fildes[i][1] = other.fildes[i][1];
+                }
+                msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
+                memcpy(msg_log, other.msg_log, MAX_LOG * sizeof(msg_log_t));
+
+                msg_cnt = other.msg_cnt;
+
+                checkpoints = other.checkpoints;
+
+                ck_time_v = other.ck_time_v;
+
+                automatic_checkpointing = other.automatic_checkpointing;
+
+                fail_log = other.fail_log;
+
+                arrived_msgs = other.arrived_msgs;
+
+                arrived_ctrl = other.arrived_ctrl;
+
+                msg_out.close();
+                char filename[32];
+                get_msg_filename(id, filename);
+                msg_out.open(filename, std::ofstream::out | std::ofstream::binary | std::ofstream::ate | std::ofstream::in);
+            }
+            return *this;
+        }
         /**
          * @brief Constructor for State class.
          * @param process_nr The process number.

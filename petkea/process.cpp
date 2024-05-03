@@ -331,7 +331,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
 {
 
     int64_t restart_duration;
-    int64_t rollback_duration_arr[20];
+    int64_t rollback_duration_arr[40];
     cout << "msg_process " << process_nr << " started with pid = " << getpid() << endl;
 
     fd_set current_fd, ready_fd;
@@ -372,6 +372,18 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
     auto stop_ck = chrono::high_resolution_clock::now();
     if (restart)
     {
+        ifstream del_in("fail_v_process_1.dat", ifstream::in | ifstream::binary);
+        del_in.seekg(0, ifstream::end);
+        int f_size = del_in.tellg();
+        del_in.seekg(0, ifstream::beg);
+        char del_file[f_size];
+        del_in.read(del_file, f_size);
+        del_in.close();
+        ofstream fail_out("fail_v_process_1.dat", ofstream::out | ofstream::binary | ofstream::trunc);
+
+        fail_out.write(del_file, f_size - 12);
+        fail_out.close();
+        state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
         auto duration_ck = chrono::duration_cast<chrono::microseconds>(stop_ck - start_ck);
         int64_t test = duration_ck.count();
         restart_duration = test;
@@ -460,7 +472,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             char rollback_timing[32];
             sprintf(rollback_timing, "rollback_timing_process_%d.csv", process_nr);
             ofstream rollback_out(rollback_timing, ofstream::out | ofstream::app | ofstream::binary);
-            for (size_t i = 0; i < 20; i++)
+            for (size_t i = 0; i < ROLLBACKS_TO_PERFORM; i++)
             {
                 rollback_out << to_string(rollback_duration_arr[i]) << ",";
             }

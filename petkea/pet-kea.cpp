@@ -585,6 +585,19 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
     // print_ctrl_msg(msg);
 
     // RB.2
+    char filename[32];
+    get_fail_filename(id, filename);
+    ofstream fail_out(filename, ofstream::out | ofstream::binary | ofstream::app);
+    // fail_out.seekp(0, ofstream::end);
+
+    struct fail_log_t entry = {msg->sending_process_nr, msg->log_entry.fail_nr, msg->log_entry.res_time};
+    fail_out.write((char *)&entry, sizeof(fail_log_t));
+    fail_out.close();
+
+    fail_log.push_back(entry);
+
+    //  RB.2.3
+    fail_v[msg->sending_process_nr] = msg->log_entry.fail_nr;
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
     {
         //  RB.2.1      remove ckeckpoints T^i > crT^i, set state and T to latest ckeckpoint, replays
@@ -647,19 +660,6 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         }
 
         //  RB.2.2
-        char filename[32];
-        get_fail_filename(id, filename);
-        ofstream fail_out(filename, ofstream::out | ofstream::binary | ofstream::app);
-        // fail_out.seekp(0, ofstream::end);
-
-        struct fail_log_t entry = {msg->sending_process_nr, msg->log_entry.fail_nr, msg->log_entry.res_time};
-        fail_out.write((char *)&entry, sizeof(fail_log_t));
-        fail_out.close();
-
-        fail_log.push_back(entry);
-
-        //  RB.2.3
-        fail_v[msg->sending_process_nr] = msg->log_entry.fail_nr;
 
         // RB.3
 
@@ -916,7 +916,6 @@ Pet_kea::State::~State()
 
     free(fildes);
     msg_out.close();
-    commit_out.close();
 }
 int Pet_kea::State::get_msg_cnt()
 {
@@ -1106,7 +1105,33 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
             free(c_data);
             free(data);
             if (check_duplicate_ctrl(c_msg.log_entry))
+            {
+
+                for (int i = 0; i < msg_cnt; i++)
+                {
+                    if (!msg_log[i].recipient && msg_log[i].process_id == c_msg.sending_process_nr && !(c_msg.recieved_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_sender[id], msg_log[i].fail_v_sender))))
+                    {
+                        struct msg_t retransmit_msg;
+                        retransmit_msg.msg_type = MSG;
+                        retransmit_msg.sending_process_nr = id;
+                        retransmit_msg.time_v = msg_log[i].time_v_sender;
+                        retransmit_msg.fail_v = msg_log[i].fail_v_sender;
+                        retransmit_msg.msg_size = msg_log[i].msg_size;
+                        retransmit_msg.msg_buf = (char *)malloc(retransmit_msg.msg_size * sizeof(char));
+                        memcpy(retransmit_msg.msg_buf, msg_log[i].msg_buf, retransmit_msg.msg_size);
+
+                        char data[SER_MSG_SIZE + msg_log[i].msg_size];
+                        serialize(&retransmit_msg, data);
+
+                        // send the message
+                        if (write(this->fildes[msg_log[i].process_id][1], data, SER_MSG_SIZE + msg_log[i].msg_size) < 0)
+                        {
+                            // TODO:handle error
+                        }
+                    }
+                }
                 return 2;
+            }
 
             rollback(&c_msg);
             return 2;

@@ -28,12 +28,12 @@
 #include <time.h>
 #include <thread>
 
-const int CHILDREN = 8;
+const int CHILDREN = 4;
 #include "pet-kea.hpp"
 
 const int SER_ERR_MSG_SIZE = sizeof(int) * 5;
 const int SEED = 555432;
-const int ROLLBACKS_TO_PERFORM = 20;
+const int ROLLBACKS_TO_PERFORM = 40;
 const int CHECKPOINTS_EVERY = 50;
 
 typedef enum message_type

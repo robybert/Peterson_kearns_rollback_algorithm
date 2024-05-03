@@ -38,7 +38,7 @@ int main(int argc, char const *argv[])
 
     int to_restart = 1;
 
-    for (int i = 0; i < ROLLBACKS_TO_PERFORM; i++)
+    for (int i = 0; i < ROLLBACKS_TO_PERFORM / 2; i++)
     {
         this_thread::sleep_for(chrono::seconds(10));
 
