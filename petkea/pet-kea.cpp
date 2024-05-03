@@ -885,7 +885,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         }
         if (!indices_to_rem.empty())
         {
-            prev_cnt = rem_log_entries(indices_to_rem, prev_cnt);
+            msg_cnt = rem_log_entries(indices_to_rem, prev_cnt);
             indices_to_rem.clear();
         }
 
@@ -906,7 +906,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 
         // RB.3
 
-        for (int i = temp_msg_cnt; i < prev_cnt; i++) // TODO: check if you have to go from the beginning
+        for (int i = temp_msg_cnt; i < msg_cnt; i++) // TODO: check if you have to go from the beginning
         {
             // move recv event to the back??? TODO: ask if this is what is meant with RB.3.2
             if (msg_log[i].recipient && msg_log[i].time_v_reciever[msg->sending_process_nr] > msg->log_entry.res_time)
@@ -1588,7 +1588,32 @@ int Pet_kea::State::recv_msg(int fildes[2], char *output, int size)
             free(c_data);
             free(data);
             if (check_duplicate_ctrl(c_msg.log_entry))
-                return 2;
+
+                for (int i = 0; i < msg_cnt; i++)
+                {
+                    if (!msg_log[i].recipient && msg_log[i].process_id == c_msg.sending_process_nr && !(c_msg.recieved_msgs.contains(pair<int, vector<int>>(msg_log[i].time_v_sender[id], msg_log[i].fail_v_sender))))
+                    {
+                        struct msg_t retransmit_msg;
+                        retransmit_msg.msg_type = MSG;
+                        retransmit_msg.sending_process_nr = id;
+                        retransmit_msg.time_v = msg_log[i].time_v_sender;
+                        retransmit_msg.fail_v = msg_log[i].fail_v_sender;
+                        retransmit_msg.msg_size = msg_log[i].msg_size;
+                        retransmit_msg.msg_buf = (char *)malloc(retransmit_msg.msg_size * sizeof(char));
+                        memcpy(retransmit_msg.msg_buf, msg_log[i].msg_buf, retransmit_msg.msg_size);
+
+                        char data[SER_MSG_SIZE + msg_log[i].msg_size];
+                        serialize(&retransmit_msg, data);
+
+                        // send the message
+                        if (write(this->fildes[msg_log[i].process_id][1], data, SER_MSG_SIZE + msg_log[i].msg_size) < 0)
+                        {
+                            // TODO:handle error
+                        }
+                    }
+                }
+
+            return 2;
 
             rollback(&c_msg);
             return 2;
