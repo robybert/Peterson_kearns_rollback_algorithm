@@ -828,6 +828,19 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
     print_ctrl_msg(msg);
 
     // RB.2
+    char filename[32];
+    get_fail_filename(id, filename);
+    ofstream fail_out(filename, ofstream::out | ofstream::binary | ofstream::app);
+    // fail_out.seekp(0, ofstream::end);
+
+    struct fail_log_t entry = {msg->sending_process_nr, msg->log_entry.fail_nr, msg->log_entry.res_time};
+    fail_out.write((char *)&entry, sizeof(fail_log_t));
+    fail_out.close();
+
+    fail_log.push_back(entry);
+
+    //  RB.2.3
+    fail_v[msg->sending_process_nr] = msg->log_entry.fail_nr;
     if (time_v[msg->sending_process_nr] > msg->log_entry.res_time)
     {
         //  RB.2.1      remove ckeckpoints T^i > crT^i, set state and T to latest ckeckpoint, replays
@@ -890,19 +903,6 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         }
 
         //  RB.2.2
-        char filename[32];
-        get_fail_filename(id, filename);
-        ofstream fail_out(filename, ofstream::out | ofstream::binary | ofstream::app);
-        // fail_out.seekp(0, ofstream::end);
-
-        struct fail_log_t entry = {msg->sending_process_nr, msg->log_entry.fail_nr, msg->log_entry.res_time};
-        fail_out.write((char *)&entry, sizeof(fail_log_t));
-        fail_out.close();
-
-        fail_log.push_back(entry);
-
-        //  RB.2.3
-        fail_v[msg->sending_process_nr] = msg->log_entry.fail_nr;
 
         // RB.3
 
