@@ -84,24 +84,25 @@ char **Pet_kea::State::get_msg_log()
 
 bool Pet_kea::State::check_duplicate(struct msg_t *msg)
 {
+
     vector<int> merged_time_fail_v;
     merged_time_fail_v = msg->time_v;
     merged_time_fail_v.insert(merged_time_fail_v.end(), msg->fail_v.begin(), msg->fail_v.end());
-    auto [it, inserted] = arrived_msgs.insert(merged_time_fail_v);
-    if (msg->fail_v[id] == fail_v[id]) // TODO: make this work if another failure occurs before it is removed
-    {
-        // remove the entry from the set
-        arrived_msgs.erase(it);
-    }
+    if (arrived_msgs.contains(merged_time_fail_v))
+        return true;
 
-    return !(inserted);
+    arrived_msgs.insert(merged_time_fail_v);
+    return false;
 }
 
 bool Pet_kea::State::check_duplicate_ctrl(struct fail_log_t log)
 {
     vector<int> fail_log_vector{log.id, log.fail_nr, log.res_time};
-    auto [it, inserted] = arrived_ctrl.insert(fail_log_vector);
-    return !(inserted);
+    if (arrived_ctrl.contains(fail_log_vector))
+        return true;
+
+    arrived_ctrl.insert(fail_log_vector);
+    return false;
 }
 
 bool Pet_kea::State::check_orphaned(struct msg_t *msg)
