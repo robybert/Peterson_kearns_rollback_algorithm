@@ -741,6 +741,19 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
     return 0;
 }
 
+void Pet_kea::State::swap_log(State &first, const State &second)
+{
+    for (int i = 0; i < first.msg_cnt; i++)
+    {
+        first.msg_log[i].time_v_reciever = second.msg_log[i].time_v_reciever;
+        first.msg_log[i].time_v_sender = second.msg_log[i].time_v_sender;
+        first.msg_log[i].fail_v_sender = second.msg_log[i].fail_v_sender;
+
+        first.msg_log[i].msg_buf = (char *)malloc(second.msg_log[i].msg_size);
+        memcpy(first.msg_log[i].msg_buf, second.msg_log[i].msg_buf, second.msg_log[i].msg_size);
+    }
+}
+
 Pet_kea::State::State(int process_nr, int process_cnt, int (*fd)[2], bool restart) : id(process_nr),
                                                                                      time_v(process_cnt, 0),
                                                                                      fail_v(process_cnt, 0),

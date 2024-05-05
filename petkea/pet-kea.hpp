@@ -257,6 +257,8 @@ namespace Pet_kea
          */
         int rollback(struct ctrl_msg_t *msg);
 
+        void swap_log(State &first, const State &second);
+
     public:
         const int SER_LOG_SIZE = 3 * sizeof(int) + time_v.size() * 3 * sizeof(int);
         inline size_t SER_SIZE_CTRL_MSG_T(int recvd_cnt) { return (6 * sizeof(int) + recvd_cnt * (sizeof(int) + time_v.size() * sizeof(int))); };
@@ -292,10 +294,13 @@ namespace Pet_kea
                     fildes[i][0] = other.fildes[i][0];
                     fildes[i][1] = other.fildes[i][1];
                 }
+
+                msg_cnt = other.msg_cnt;
+
                 msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
                 memcpy(msg_log, other.msg_log, MAX_LOG * sizeof(msg_log_t));
 
-                msg_cnt = other.msg_cnt;
+                swap_log(*this, other);
 
                 checkpoints = other.checkpoints;
 
