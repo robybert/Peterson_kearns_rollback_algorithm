@@ -368,7 +368,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
     }
 
     auto start_ck = chrono::high_resolution_clock::now();
-    Pet_kea::State state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
+    Pet_kea::State state(process_nr, CHILDREN, fildes, restart);
     auto stop_ck = chrono::high_resolution_clock::now();
     if (restart)
     {

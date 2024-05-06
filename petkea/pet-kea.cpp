@@ -741,7 +741,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
     return 0;
 }
 
-void Pet_kea::State::swap_log(State &first, const State &second)
+void Pet_kea::State::copy_log(State &first, const State &second)
 {
     for (int i = 0; i < first.msg_cnt; i++)
     {

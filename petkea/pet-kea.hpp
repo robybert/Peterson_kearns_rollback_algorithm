@@ -257,7 +257,7 @@ namespace Pet_kea
          */
         int rollback(struct ctrl_msg_t *msg);
 
-        void swap_log(State &first, const State &second);
+        void copy_log(State &first, const State &second);
 
     public:
         const int SER_LOG_SIZE = 3 * sizeof(int) + time_v.size() * 3 * sizeof(int);
@@ -279,14 +279,14 @@ namespace Pet_kea
                 time_v = other.time_v;
                 fail_v = other.fail_v;
 
-                if (fildes)
-                {
-                    for (int i = 0; i < (int)time_v.size(); i++)
-                    {
-                        free(fildes[i]);
-                    }
-                    free(fildes);
-                }
+                // if (fildes)
+                // {
+                //     for (int i = 0; i < (int)time_v.size(); i++)
+                //     {
+                //         free(fildes[i]);
+                //     }
+                //     free(fildes);
+                // }
                 fildes = (int **)malloc((int)time_v.size() * sizeof(int *));
                 for (int i = 0; i < (int)time_v.size(); i++)
                 {
@@ -300,7 +300,7 @@ namespace Pet_kea
                 msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
                 memcpy(msg_log, other.msg_log, MAX_LOG * sizeof(msg_log_t));
 
-                swap_log(*this, other);
+                copy_log(*this, other);
 
                 checkpoints = other.checkpoints;
 
@@ -320,6 +320,37 @@ namespace Pet_kea
                 msg_out.open(filename, std::ofstream::out | std::ofstream::binary | std::ofstream::ate | std::ofstream::in);
             }
             return *this;
+        }
+
+        State(const State &other)
+            : id(other.id),
+              time_v(other.time_v),
+              fail_v(other.fail_v),
+              msg_cnt(other.msg_cnt),
+              checkpoints(other.checkpoints),
+              ck_time_v(other.ck_time_v),
+              automatic_checkpointing(other.automatic_checkpointing),
+              fail_log(other.fail_log)
+        {
+            // Deep copy fildes
+            fildes = (int **)malloc((int)time_v.size() * sizeof(int *));
+            for (int i = 0; i < (int)time_v.size(); i++)
+            {
+                fildes[i] = (int *)malloc(2 * sizeof(int));
+                fildes[i][0] = other.fildes[i][0];
+                fildes[i][1] = other.fildes[i][1];
+            }
+            // Deep copy msg_log if not nullptr
+            if (other.msg_log != nullptr)
+            {
+                msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
+                memcpy(msg_log, other.msg_log, MAX_LOG * sizeof(msg_log_t));
+                copy_log(*this, other);
+            }
+            else
+            {
+                msg_log = nullptr;
+            }
         }
         /**
          * @brief Constructor for State class.

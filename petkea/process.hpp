@@ -33,7 +33,7 @@ const int CHILDREN = 4;
 
 const int SER_ERR_MSG_SIZE = sizeof(int) * 5;
 const int SEED = 555432;
-const int ROLLBACKS_TO_PERFORM = 40;
+const int ROLLBACKS_TO_PERFORM = 4;
 const int CHECKPOINTS_EVERY = 50;
 
 typedef enum message_type
