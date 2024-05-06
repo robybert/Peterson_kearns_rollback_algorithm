@@ -38,13 +38,16 @@ int main(int argc, char const *argv[])
 
     int to_restart = 1;
 
-    for (int i = 0; i < ROLLBACKS_TO_PERFORM / 2; i++)
+    for (int i = 0; i < ROLLBACKS_TO_PERFORM + 1; i++)
     {
         this_thread::sleep_for(chrono::seconds(10));
 
         // restart the selected process
-        c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
+        // c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
+        kill(c_pid[to_restart], SIGUSR1);
     }
+
+    this_thread::sleep_for(chrono::seconds(10));
 
     kill(c_pid[to_restart], SIGINT);
     while (0)

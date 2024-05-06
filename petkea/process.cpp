@@ -1,10 +1,10 @@
 #include "pet-kea.hpp"
 #include "process.hpp"
 
-
 using namespace std;
 
 bool is_active;
+bool restart_now;
 int rollback_cnt = 0;
 int send_cnt = 0;
 
@@ -76,6 +76,9 @@ void signalHandler(int signum)
     case SIGPIPE:
         // cerr << "SIGPIPE: Broken pipe" << endl;
         return;
+    case SIGUSR1:
+        restart_now = true;
+        return;
 
     default:
         break;
@@ -119,9 +122,11 @@ pid_t fork_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2],
     else if (c_pid == 0)
     { // child process
         signal(SIGINT, signalHandler);
+        signal(SIGUSR1, signalHandler);
         signal(SIGPIPE, signalHandler);
         signal(EPIPE, signalHandler);
         is_active = true;
+        restart_now = false;
         msg_process(process_nr, fildes, sv, restart);
         cout << "child EXIT" << endl;
         exit(0);
@@ -368,28 +373,10 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         send_err_msg_over_socket(process_nr, fildes, sv);
     }
 
-    auto start_ck = chrono::high_resolution_clock::now();
     Pet_kea::State state(process_nr, CHILDREN, fildes, restart);
-    auto stop_ck = chrono::high_resolution_clock::now();
     if (restart)
     {
-        ifstream del_in("fail_v_process_1.dat", ifstream::in | ifstream::binary);
-        del_in.seekg(0, ifstream::end);
-        int f_size = del_in.tellg();
-        del_in.seekg(0, ifstream::beg);
-        char del_file[f_size];
-        del_in.read(del_file, f_size);
-        del_in.close();
-        ofstream fail_out("fail_v_process_1.dat", ofstream::out | ofstream::binary | ofstream::trunc);
 
-        fail_out.write(del_file, f_size - 12);
-        fail_out.close();
-        state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
-        auto duration_ck = chrono::duration_cast<chrono::microseconds>(stop_ck - start_ck);
-        int64_t test = duration_ck.count();
-        restart_duration = test;
-
-        restart_out << to_string(restart_duration) << ",";
         // restart_out.flush();
     }
 
@@ -458,12 +445,27 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (restart_now)
+        {
+            restart_now = false;
+            restart = true;
+            this_thread::sleep_for(chrono::seconds(1));
+            restart_out << state.get_msg_cnt() << ",";
+            auto start_ck = chrono::high_resolution_clock::now();
+            state = Pet_kea::State(process_nr, CHILDREN, fildes, restart);
+            auto stop_ck = chrono::high_resolution_clock::now();
+
+            auto duration_ck = chrono::duration_cast<chrono::microseconds>(stop_ck - start_ck);
+            int64_t test = duration_ck.count();
+            restart_duration = test;
+
+            restart_out << to_string(restart_duration) << '\n';
+        }
 
         if (!is_active || rollback_cnt == ROLLBACKS_TO_PERFORM)
         {
             if (process_nr == 1)
             {
-                restart_out << state.get_msg_cnt() << "," << '\n';
                 restart_out.flush();
                 restart_out.close();
                 return;
