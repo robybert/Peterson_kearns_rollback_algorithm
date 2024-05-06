@@ -6,6 +6,7 @@
 #ifndef _PETKEA_HPP_
 #define _PETKEA_HPP_
 
+#include <algorithm>
 #include <unistd.h>
 #include <vector>
 #include <set>
@@ -17,6 +18,7 @@
 #include <cstring>
 #include <filesystem>
 #include <bits/stdc++.h>
+
 
 // using namespace std;
 
@@ -115,10 +117,14 @@ namespace Pet_kea
                 msg_size = other.msg_size;
                 recipient = other.recipient;
                 process_id = other.process_id;
-                msg_buf = other.msg_buf;
                 time_v_sender = other.time_v_sender;
                 time_v_reciever = other.time_v_reciever;
                 fail_v_sender = other.fail_v_sender;
+                char* temp_buf = (char*)malloc(msg_size);
+                memcpy(temp_buf, other.msg_buf, msg_size);
+                free(msg_buf);
+                msg_buf = temp_buf;
+
             }
             return *this;
         }
@@ -279,14 +285,14 @@ namespace Pet_kea
                 time_v = other.time_v;
                 fail_v = other.fail_v;
 
-                // if (fildes)
-                // {
-                //     for (int i = 0; i < (int)time_v.size(); i++)
-                //     {
-                //         free(fildes[i]);
-                //     }
-                //     free(fildes);
-                // }
+                if (fildes)
+                {
+                    for (int i = 0; i < (int)time_v.size(); i++)
+                    {
+                        free(fildes[i]);
+                    }
+                    free(fildes);
+                }
                 fildes = (int **)malloc((int)time_v.size() * sizeof(int *));
                 for (int i = 0; i < (int)time_v.size(); i++)
                 {
@@ -296,12 +302,23 @@ namespace Pet_kea
                 }
 
                 msg_cnt = other.msg_cnt;
+                msg_log_t * temp_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
 
-                msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
-                memcpy(msg_log, other.msg_log, MAX_LOG * sizeof(msg_log_t));
+                for (int i = 0; i < other.msg_cnt; i++)
+                {
+                    temp_log[i] = other.msg_log[i];
+                }
+                for (int i = other.msg_cnt - 1; i >= 0; i--)
+                {
+                    std::vector<int>().swap(msg_log[i].time_v_reciever);
+                    std::vector<int>().swap(msg_log[i].time_v_sender);
+                    std::vector<int>().swap(msg_log[i].fail_v_sender);
 
-                swap_log(*this, other);
-
+                    free(msg_log[i].msg_buf);
+                }
+                free(msg_log);
+                msg_log = temp_log;
+                
                 checkpoints = other.checkpoints;
 
                 ck_time_v = other.ck_time_v;
@@ -345,7 +362,17 @@ namespace Pet_kea
             {
                 msg_log = (msg_log_t *)calloc(MAX_LOG, sizeof(msg_log_t));
                 memcpy(msg_log, other.msg_log, MAX_LOG * sizeof(msg_log_t));
-                swap_log(*this, other);
+                
+                for (int i = 0; i < other.msg_cnt; i++)
+                {
+                    msg_log[i].time_v_reciever = other.msg_log[i].time_v_reciever;
+                    msg_log[i].time_v_sender = other.msg_log[i].time_v_sender;
+                    msg_log[i].fail_v_sender = other.msg_log[i].fail_v_sender;
+
+                    msg_log[i].msg_buf = (char*)malloc(msg_log[i].msg_size);
+                    memcpy(msg_log[i].msg_buf, other.msg_log[i].msg_buf, msg_log[i].msg_size);
+                }
+                
             }
             else
             {

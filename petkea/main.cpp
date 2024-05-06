@@ -46,6 +46,7 @@ int main(int argc, char const *argv[])
         c_pid[to_restart] = restart_process(to_restart, c_pid[to_restart], fildes, sv);
     }
 
+    kill(c_pid[to_restart], SIGINT);
     while (0)
     {
 

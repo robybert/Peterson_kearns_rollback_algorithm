@@ -220,7 +220,7 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
 
     vector<int>::iterator curr = to_remove.begin();
     int new_final_index = 0;
-    for (int i = 0; i < msg_cnt; i++)
+    for (int i = 0; i < final_index; i++)
     {
         if (curr != to_remove.end() && i == *curr)
         {
@@ -233,6 +233,7 @@ int Pet_kea::State::rem_log_entries(vector<int> to_remove, int final_index)
         }
         new_log[new_final_index] = msg_log[i];
         new_final_index++;
+        free(msg_log[i].msg_buf);
         vector<int>().swap(msg_log[i].time_v_reciever);
         vector<int>().swap(msg_log[i].time_v_sender);
         vector<int>().swap(msg_log[i].fail_v_sender);
@@ -663,8 +664,8 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
         //  RB.2.2
 
         // RB.3
-
-        for (int i = temp_msg_cnt; i < msg_cnt; i++) // TODO: check if you have to go from the beginning
+        prev_cnt = msg_cnt;
+        for (int i = temp_msg_cnt; i < prev_cnt; i++) // TODO: check if you have to go from the beginning
         {
             // move recv event to the back??? TODO: ask if this is what is meant with RB.3.2
             if (msg_log[i].recipient && msg_log[i].time_v_reciever[msg->sending_process_nr] > msg->log_entry.res_time)
@@ -694,7 +695,7 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
                 {
                     if (j == id)
                         continue;
-                    time_v.at(j) = max(msg_log[i].time_v_sender[i], time_v[i]);
+                    time_v.at(j) = max(msg_log[i].time_v_sender[j], time_v[j]);
                 }
 
                 // remove the duplicate msg from the log
@@ -743,14 +744,14 @@ int Pet_kea::State::rollback(struct ctrl_msg_t *msg)
 
 void Pet_kea::State::swap_log(State &first, const State &second)
 {
-    for (int i = 0; i < first.msg_cnt; i++)
+    for (int i = 0; i < second.msg_cnt; i++)
     {
         swap(first.msg_log[i].time_v_reciever, second.msg_log[i].time_v_reciever);
         swap(first.msg_log[i].time_v_sender, second.msg_log[i].time_v_sender);
         swap(first.msg_log[i].fail_v_sender, second.msg_log[i].fail_v_sender);
 
-        swap(first.msg_log[i].msg_buf, second.msg_log[i].msg_buf);
-        // memcpy(first.msg_log[i].msg_buf, second.msg_log[i].msg_buf, second.msg_log[i].msg_size);
+        first.msg_log[i].msg_buf= (char*)malloc(second.msg_log[i].msg_size);
+        memcpy(first.msg_log[i].msg_buf, second.msg_log[i].msg_buf, second.msg_log[i].msg_size);
     }
 }
 
