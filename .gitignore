@@ -6,4 +6,5 @@ output
 *.json
 petkea/ouput.txt
 *.csv
-*.png
+experimental\ results/*
+*.odg

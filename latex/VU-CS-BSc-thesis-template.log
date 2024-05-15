@@ -1,0 +1,505 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024/Arch Linux) (preloaded format=pdflatex 2024.4.30)  15 MAY 2024 17:53
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**VU-CS-BSc-thesis-template.tex
+(./VU-CS-BSc-thesis-template.tex
+LaTeX2e <2023-11-01> patch level 1
+L3 programming layer <2024-02-20>
+(/usr/share/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2023/05/17 v1.4n Standard LaTeX document class
+(/usr/share/texmf-dist/tex/latex/base/size11.clo
+File: size11.clo 2023/05/17 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count188
+\c@section=\count189
+\c@subsection=\count190
+\c@subsubsection=\count191
+\c@paragraph=\count192
+\c@subparagraph=\count193
+\c@figure=\count194
+\c@table=\count195
+\abovecaptionskip=\skip48
+\belowcaptionskip=\skip49
+\bibindent=\dimen140
+)
+(/usr/share/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2021/09/16 v1.2d Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks17
+)
+(/usr/share/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2022/03/10 v1.4e Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2021/08/11 v1.11 sin cos tan (DPC)
+)
+(/usr/share/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 107.
+
+(/usr/share/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2022/09/22 v1.2b Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen141
+\Gin@req@width=\dimen142
+)
+(/usr/share/texmf-dist/tex/latex/cite/cite.sty
+LaTeX Info: Redefining \cite on input line 302.
+LaTeX Info: Redefining \nocite on input line 332.
+Package: cite 2015/02/27  v 5.5
+)
+(/usr/share/texmf-dist/tex/latex/base/inputenc.sty
+Package: inputenc 2021/02/14 v1.3d Input encoding file
+\inpenc@prehook=\toks18
+\inpenc@posthook=\toks19
+)
+(/usr/share/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2021/04/29 v2.0v Standard LaTeX package
+)
+(/usr/share/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2020/01/02 v5.9 Page Geometry
+
+(/usr/share/texmf-dist/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(/usr/share/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2022/02/03 v1.0f TeX engine tests
+))
+\Gm@cnth=\count196
+\Gm@cntv=\count197
+\c@Gm@tempcnt=\count198
+\Gm@bindingoffset=\dimen143
+\Gm@wd@mp=\dimen144
+\Gm@odd@mp=\dimen145
+\Gm@even@mp=\dimen146
+\Gm@layoutwidth=\dimen147
+\Gm@layoutheight=\dimen148
+\Gm@layouthoffset=\dimen149
+\Gm@layoutvoffset=\dimen150
+\Gm@dimlist=\toks20
+)
+(/usr/share/texmf-dist/tex/latex/caption/caption.sty
+Package: caption 2023/08/05 v3.6o Customizing captions (AR)
+
+(/usr/share/texmf-dist/tex/latex/caption/caption3.sty
+Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
+\caption@tempdima=\dimen151
+\captionmargin=\dimen152
+\caption@leftmargin=\dimen153
+\caption@rightmargin=\dimen154
+\caption@width=\dimen155
+\caption@indent=\dimen156
+\caption@parindent=\dimen157
+\caption@hangindent=\dimen158
+Package caption Info: Standard document class detected.
+)
+\c@caption@flags=\count199
+\c@continuedfloat=\count266
+)
+(/usr/share/texmf-dist/tex/latex/caption/subcaption.sty
+Package: subcaption 2023/07/28 v1.6b Sub-captions (AR)
+Package caption Info: New subtype `subfigure' on input line 238.
+\c@subfigure=\count267
+Package caption Info: New subtype `subtable' on input line 238.
+\c@subtable=\count268
+)
+(/usr/share/texmf-dist/tex/latex/listings/listings.sty
+\lst@mode=\count269
+\lst@gtempboxa=\box51
+\lst@token=\toks21
+\lst@length=\count270
+\lst@currlwidth=\dimen159
+\lst@column=\count271
+\lst@pos=\count272
+\lst@lostspace=\dimen160
+\lst@width=\dimen161
+\lst@newlines=\count273
+\lst@lineno=\count274
+\lst@maxwidth=\dimen162
+
+(/usr/share/texmf-dist/tex/latex/listings/lstpatch.sty
+File: lstpatch.sty 2024/02/21 1.10 (Carsten Heinz)
+)
+(/usr/share/texmf-dist/tex/latex/listings/lstmisc.sty
+File: lstmisc.sty 2024/02/21 1.10 (Carsten Heinz)
+\c@lstnumber=\count275
+\lst@skipnumbers=\count276
+\lst@framebox=\box52
+)
+(/usr/share/texmf-dist/tex/latex/listings/listings.cfg
+File: listings.cfg 2024/02/21 1.10 listings configuration
+))
+Package: listings 2024/02/21 1.10 (Carsten Heinz)
+
+(/usr/share/texmf-dist/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2023/11/15 v3.01 LaTeX color extensions (UK)
+
+(/usr/share/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+
+(/usr/share/texmf-dist/tex/latex/graphics/mathcolor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1350.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1354.
+Package xcolor Info: Model `RGB' extended on input line 1366.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1368.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1371.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1372.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1373.
+)
+(/usr/share/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2024/02/21 1.10 listings language file
+)
+(/usr/share/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2024/02/21 1.10 listings language file
+)
+(/usr/share/texmf-dist/tex/latex/listings/lstmisc.sty
+File: lstmisc.sty 2024/02/21 1.10 (Carsten Heinz)
+)
+(/usr/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+File: l3backend-pdftex.def 2024-02-20 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count277
+\l__pdf_internal_box=\box53
+)
+(./VU-CS-BSc-thesis-template.aux)
+\openout1 = `VU-CS-BSc-thesis-template.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+
+(/usr/share/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count278
+\scratchdimen=\dimen163
+\scratchbox=\box54
+\nofMPsegments=\count279
+\nofMParguments=\count280
+\everyMPshowfont=\toks22
+\MPscratchCnt=\count281
+\MPscratchDim=\dimen164
+\MPnumerator=\count282
+\makeMPintoPDFobject=\count283
+\everyMPtoPDFconversion=\toks23
+) (/usr/share/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(/usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: a4paper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(56.9055pt, 483.69684pt, 56.90553pt)
+* v-part:(T,H,B)=(56.9055pt, 731.23582pt, 56.90552pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=483.69684pt
+* \textheight=731.23582pt
+* \oddsidemargin=-15.36449pt
+* \evensidemargin=-15.36449pt
+* \topmargin=-52.36449pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=11.0pt
+* \footskip=30.0pt
+* \marginparwidth=4.0pt
+* \marginparsep=10.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumntrue
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: listings package is loaded.
+Package caption Info: End \AtBeginDocument code.
+\c@lstlisting=\count284
+<images/vu_griffioen.png, id=1, 218.8175pt x 231.86626pt>
+File: images/vu_griffioen.png Graphic file (type png)
+<use images/vu_griffioen.png>
+Package pdftex.def Info: images/vu_griffioen.png  used on input line 43.
+(pdftex.def)             Requested size: 75.18494pt x 79.66771pt.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <14.4> on input line 59.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 59.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 66.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 66.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 66.
+[1
+
+
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texmf-dist/fonts
+/enc/dvips/cm-super/cm-super-t1.enc} <./images/vu_griffioen.png>]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [2
+
+]
+Underfull \hbox (badness 1028) in paragraph at lines 150--151
+[]\T1/cmr/m/it/10.95 Checkpointing \T1/cmr/m/n/10.95 is the pe-ri-od-i-cally sa
+v-ing of
+ []
+
+[3{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
+Underfull \vbox (badness 1275) has occurred while \output is active []
+
+ [4]
+<images/Orphan_arrived.png, id=25, 770.88pt x 481.8pt>
+File: images/Orphan_arrived.png Graphic file (type png)
+<use images/Orphan_arrived.png>
+Package pdftex.def Info: images/Orphan_arrived.png  used on input line 180.
+(pdftex.def)             Requested size: 227.62204pt x 142.26208pt.
+<images/Orphan_in_transit.png, id=27, 770.88pt x 481.8pt>
+File: images/Orphan_in_transit.png Graphic file (type png)
+<use images/Orphan_in_transit.png>
+Package pdftex.def Info: images/Orphan_in_transit.png  used on input line 186.
+(pdftex.def)             Requested size: 227.62204pt x 142.26208pt.
+
+Underfull \hbox (badness 1769) in paragraph at lines 194--195
+[]\T1/cmr/bx/n/10.95 Orphan-arrived\T1/cmr/m/n/10.95 : The re-ceive event is
+ []
+
+<images/Childless_lost.png, id=28, 770.88pt x 481.8pt>
+File: images/Childless_lost.png Graphic file (type png)
+<use images/Childless_lost.png>
+Package pdftex.def Info: images/Childless_lost.png  used on input line 203.
+(pdftex.def)             Requested size: 227.62204pt x 142.26208pt.
+<images/Childless_orphan.png, id=29, 770.88pt x 481.8pt>
+File: images/Childless_orphan.png Graphic file (type png)
+<use images/Childless_orphan.png>
+Package pdftex.def Info: images/Childless_orphan.png  used on input line 209.
+(pdftex.def)             Requested size: 227.62204pt x 142.26208pt.
+[5 <./images/Orphan_arrived.png> <./images/Orphan_in_transit.png> <./images/Chi
+ldless_lost.png> <./images/Childless_orphan.png>]
+Underfull \hbox (badness 2042) in paragraph at lines 237--238
+[]$\OML/cmm/m/it/10.95 n$\T1/cmr/m/n/10.95 : The fail-ure num-ber, in-di-cat-in
+g the
+ []
+
+[6] [7] [8] [9]
+Underfull \hbox (badness 1655) in paragraph at lines 375--376
+\T1/cmr/m/n/10.95 13 us-ing a in-tel i7-8565U CPU run-ning at
+ []
+
+
+Underfull \hbox (badness 6542) in paragraph at lines 376--379
+[]\T1/cmr/m/n/10.95 The mea-sure-ments are taken us-ing the
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+<images/send_timing_commit_ma_new.png, id=60, 770.88pt x 449.68pt>
+File: images/send_timing_commit_ma_new.png Graphic file (type png)
+<use images/send_timing_commit_ma_new.png>
+Package pdftex.def Info: images/send_timing_commit_ma_new.png  used on input li
+ne 390.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+<images/send_timing_nocommit_ma_new.png, id=61, 770.88pt x 449.68pt>
+File: images/send_timing_nocommit_ma_new.png Graphic file (type png)
+<use images/send_timing_nocommit_ma_new.png>
+Package pdftex.def Info: images/send_timing_nocommit_ma_new.png  used on input 
+line 395.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[10 <./images/send_timing_commit_ma_new.png>]
+<images/recv_timing_commit_2_processes_new.png, id=66, 770.88pt x 449.68pt>
+File: images/recv_timing_commit_2_processes_new.png Graphic file (type png)
+<use images/recv_timing_commit_2_processes_new.png>
+Package pdftex.def Info: images/recv_timing_commit_2_processes_new.png  used on
+ input line 403.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+<images/recv_timing_nocommit_ma_new.png, id=67, 770.88pt x 449.68pt>
+File: images/recv_timing_nocommit_ma_new.png Graphic file (type png)
+<use images/recv_timing_nocommit_ma_new.png>
+Package pdftex.def Info: images/recv_timing_nocommit_ma_new.png  used on input 
+line 408.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+<images/restart_timing_average_rode_lijn_new.png, id=68, 770.88pt x 449.68pt>
+File: images/restart_timing_average_rode_lijn_new.png Graphic file (type png)
+<use images/restart_timing_average_rode_lijn_new.png>
+Package pdftex.def Info: images/restart_timing_average_rode_lijn_new.png  used 
+on input line 416.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+<images/rollback_timing_new.png, id=69, 770.88pt x 449.68pt>
+File: images/rollback_timing_new.png Graphic file (type png)
+<use images/rollback_timing_new.png>
+Package pdftex.def Info: images/rollback_timing_new.png  used on input line 424
+.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+<images/rollback_timing_average_new.png, id=70, 770.88pt x 449.68pt>
+File: images/rollback_timing_average_new.png Graphic file (type png)
+<use images/rollback_timing_average_new.png>
+Package pdftex.def Info: images/rollback_timing_average_new.png  used on input 
+line 429.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[11 <./images/send_timing_nocommit_ma_new.png> <./images/recv_timing_commit_2_p
+rocesses_new.png> <./images/recv_timing_nocommit_ma_new.png> <./images/restart_
+timing_average_rode_lijn_new.png> <./images/rollback_timing_new.png>]
+<images/concurrent_rollback_cost_new.png, id=79, 770.88pt x 449.68pt>
+File: images/concurrent_rollback_cost_new.png Graphic file (type png)
+<use images/concurrent_rollback_cost_new.png>
+Package pdftex.def Info: images/concurrent_rollback_cost_new.png  used on input
+ line 436.
+(pdftex.def)             Requested size: 227.62204pt x 132.77795pt.
+ [12 <./images/rollback_timing_average_new.png> <./images/concurrent_rollback_c
+ost_new.png>] (./code/appendix_pet-kea.cpp [13
+
+]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [14]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [15]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [16]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [17]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [18]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [19]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [20]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [21]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [22]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [23]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [24]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [25]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [26]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [27]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [28]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [29])
+(./code/appendix_pet-kea.hpp [30]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [31]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [32]
+Overfull \hbox (154.15182pt too wide) in paragraph at lines 378--379
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][
+][][][][][][][][][][][][][][][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [33]
+Overfull \hbox (17.78418pt too wide) in paragraph at lines 444--445
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
+ []
+
+
+Overfull \hbox (17.78418pt too wide) in paragraph at lines 485--486
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
+
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [34])
+(./VU-CS-BSc-thesis-template.bbl) [35] (./VU-CS-BSc-thesis-template.aux)
+ ***********
+LaTeX2e <2023-11-01> patch level 1
+L3 programming layer <2024-02-20>
+ ***********
+ ) 
+Here is how much of TeX's memory you used:
+ 6726 strings out of 476076
+ 106525 string characters out of 5793775
+ 2078187 words of memory out of 5000000
+ 28787 multiletter control sequences out of 15000+600000
+ 573429 words of font info for 65 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 57i,8n,65p,1051b,1689s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texmf-dist/font
+s/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/
+amsfonts/cm/cmr8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
+10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/sh
+are/texmf-dist/fonts/type1/public/cm-super/sfbx0600.pfb></usr/share/texmf-dist/
+fonts/type1/public/cm-super/sfbx0800.pfb></usr/share/texmf-dist/fonts/type1/pub
+lic/cm-super/sfbx1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sf
+bx1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></us
+r/share/texmf-dist/fonts/type1/public/cm-super/sfbx2074.pfb></usr/share/texmf-d
+ist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/share/texmf-dist/fonts/type1
+/public/cm-super/sfrm0800.pfb></usr/share/texmf-dist/fonts/type1/public/cm-supe
+r/sfrm1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb>
+</usr/share/texmf-dist/fonts/type1/public/cm-super/sfti0600.pfb></usr/share/tex
+mf-dist/fonts/type1/public/cm-super/sfti1095.pfb>
+Output written on VU-CS-BSc-thesis-template.pdf (35 pages, 908645 bytes).
+PDF statistics:
+ 245 PDF objects out of 1000 (max. 8388607)
+ 141 compressed objects within 2 object streams
+ 0 named destinations out of 1000 (max. 500000)
+ 66 words of extra memory for PDF output out of 10000 (max. 10000000)
+

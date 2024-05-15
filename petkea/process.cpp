@@ -346,7 +346,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
         ready_fd = current_fd;
 
         // start reading messages
-        ret = select(fdmax + 1, &ready_fd, NULL, NULL, &tv); // TODO: check select socket
+        ret = select(fdmax + 1, &ready_fd, NULL, NULL, &tv);
         if (ret == 0)
         {
             // cout << "timeout process " << process_nr << endl;
@@ -381,7 +381,7 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
                 // ret = recv_err_msg(&buffer, fildes);
                 if (ret != -1)
                     is_busy[buffer.sending_process_nr] = false;
-                // TODO: send confirmation
+
                 state.update_fd(buffer.sending_process_nr, new_fd);
                 fildes[buffer.sending_process_nr][0] = new_fd[0];
                 fildes[buffer.sending_process_nr][1] = new_fd[1];
@@ -403,7 +403,6 @@ void msg_process(int process_nr, int fildes[CHILDREN][2], int sv[CHILDREN][2], b
             if (ret == -1)
             {
                 is_busy[dest_process_nr] = true;
-                // TODO: err checking
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

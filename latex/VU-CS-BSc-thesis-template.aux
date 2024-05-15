@@ -1,0 +1,84 @@
+\relax 
+\citation{van2023optimistic}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Improved Peterson Kearns rollback algorithm}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Context}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Problem statement}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}{Objectives}}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.4.1}Scope}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Background}{3}{}\protected@file@percent }
+\citation{bernstein2009principles}
+\citation{garcia1987sagas}
+\citation{peterson1993rollback}
+\citation{van2023optimistic}
+\citation{koo1987checkpointing}
+\citation{van2023optimistic}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Related Work}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Framework}{4}{}\protected@file@percent }
+\citation{van2023optimistic}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Classifying events}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Orphan event}{5}{}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:orphan_arrived}{{1a}{5}{}{}{}}
+\newlabel{sub@fig:orphan_arrived}{{a}{5}{}{}{}}
+\newlabel{fig:orphan_transit}{{1b}{5}{}{}{}}
+\newlabel{sub@fig:orphan_transit}{{b}{5}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Orphan events}}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}Childless event}{5}{}\protected@file@percent }
+\newlabel{fig:childless_lost}{{2a}{5}{}{}{}}
+\newlabel{sub@fig:childless_lost}{{a}{5}{}{}{}}
+\newlabel{fig:childless_orphan}{{2b}{5}{}{}{}}
+\newlabel{sub@fig:childless_orphan}{{b}{5}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Orphan events}}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Algorithm Overview}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Time Vectors}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Failure vectors}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.3}Checkpoint procedure}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.4}Restart procedure}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.5}Rollback Procedure}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Limitations}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.1}Commit procedure}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.2}Remove procedure}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Design Choices}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Methodology}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Research Goal}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Implementation Details}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Experimental Setup}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Results and Analysis}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.0.1}Memory overhead}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Experimental Findings}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.1}Sending performance}{10}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Sending cost for one message : commit procedure (200 MA)}}{10}{}\protected@file@percent }
+\newlabel{fig:comm_send}{{3}{10}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Sending cost for one message (200 MA)}}{11}{}\protected@file@percent }
+\newlabel{fig:nocomm_send}{{4}{11}{}{}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.2}Receiving performance}{11}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Receiving cost for one message : commit procedure}}{11}{}\protected@file@percent }
+\newlabel{fig:comm_recv}{{5}{11}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Receiving cost for one message (200MA)}}{11}{}\protected@file@percent }
+\newlabel{fig:nocomm_recv}{{6}{11}{}{}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.3}Restart performance}{11}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Average restart cost}}{11}{}\protected@file@percent }
+\newlabel{fig:average_restart}{{7}{11}{}{}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.4}Rollback performance}{11}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Rollback cost}}{11}{}\protected@file@percent }
+\newlabel{fig:rollback_cost}{{8}{11}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Average rollback cost}}{12}{}\protected@file@percent }
+\newlabel{fig:average_rollback}{{9}{12}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Concurrent rollback cost}}{12}{}\protected@file@percent }
+\newlabel{fig:concurrent_rollback}{{10}{12}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Correctness indication}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Future Work}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}pet-kea.cpp}{13}{}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{code/appendix\textunderscore pet\textendash kea.cpp}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}pet-kea.hpp}{30}{}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{code/appendix\textunderscore pet\textendash kea.hpp}{30}{}\protected@file@percent }
+\bibstyle{IEEEtran}
+\bibdata{mybib}
+\bibcite{bernstein2009principles}{1}
+\bibcite{garcia1987sagas}{2}
+\bibcite{peterson1993rollback}{3}
+\bibcite{van2023optimistic}{4}
+\bibcite{koo1987checkpointing}{5}
+\gdef \@abspage@last{35}
