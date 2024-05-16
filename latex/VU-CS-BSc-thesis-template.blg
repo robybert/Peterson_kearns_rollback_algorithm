@@ -8,49 +8,54 @@ Reallocated singl_function (elt_size=8) to 100 items from 50.
 Reallocated wiz_functions (elt_size=8) to 6000 items from 3000.
 Reallocated singl_function (elt_size=8) to 100 items from 50.
 Database file #1: mybib.bib
+Warning--entry type for "protobuf" isn't style-file defined
+--line 40 of file mybib.bib
+Warning--entry type for "implementation" isn't style-file defined
+--line 46 of file mybib.bib
 -- IEEEtran.bst version 1.14 (2015/08/26) by Michael Shell.
 -- http://www.michaelshell.org/tex/ieeetran/bibtex/
 -- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
 
 Done.
-You've used 5 entries,
+You've used 10 entries,
             4087 wiz_defined-function locations,
-            851 strings with 7986 characters,
-and the built_in function-call counts, 3302 in all, are:
-= -- 270
-> -- 60
+            876 strings with 8619 characters,
+and the built_in function-call counts, 5229 in all, are:
+= -- 434
+> -- 80
 < -- 26
-+ -- 32
-- -- 9
-* -- 160
-:= -- 534
-add.period$ -- 11
-call.type$ -- 5
-change.case$ -- 4
++ -- 42
+- -- 14
+* -- 235
+:= -- 919
+add.period$ -- 21
+call.type$ -- 10
+change.case$ -- 10
 chr.to.int$ -- 60
-cite$ -- 5
-duplicate$ -- 230
-empty$ -- 270
-format.name$ -- 13
-if$ -- 750
+cite$ -- 10
+duplicate$ -- 389
+empty$ -- 460
+format.name$ -- 18
+if$ -- 1175
 int.to.chr$ -- 0
-int.to.str$ -- 5
-missing$ -- 38
-newline$ -- 38
-num.names$ -- 5
-pop$ -- 85
+int.to.str$ -- 10
+missing$ -- 69
+newline$ -- 61
+num.names$ -- 10
+pop$ -- 169
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 2
-skip$ -- 256
+skip$ -- 411
 stack$ -- 0
-substring$ -- 144
-swap$ -- 182
+substring$ -- 152
+swap$ -- 267
 text.length$ -- 6
 text.prefix$ -- 0
 top$ -- 5
-type$ -- 5
+type$ -- 10
 warning$ -- 0
-while$ -- 17
-width$ -- 6
-write$ -- 68
+while$ -- 22
+width$ -- 12
+write$ -- 119
+(There were 2 warnings)

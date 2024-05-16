@@ -26,6 +26,12 @@
 	language=C++, %
 	backgroundcolor=\color{black!5}, %
 	basicstyle=\tiny, %
+	keywordstyle=\color{blue},
+	stringstyle=\color{red},
+	commentstyle=\color{green},
+	numbers=left,
+	stepnumber=1,
+	breaklines=true,
 	}
 
 
@@ -104,7 +110,7 @@ Vrije Universiteit Amsterdam
 \par The protocol relies on a vector based clock that is used to determine the causal order of the messages. To ensure the consistency of the system the Peterson-Kearns protocol relies on a logical vector clock to calculate witch events are causally after events that are lost in a failure.  each of the processes will maintain a clock vector and a failure vector  to ensure the the ability to uniquely identify failures. The failure vector ensures a consistent state when processes fail concurrently. An in-depth description of the protocol will be provided in Section II
 
 \subsection{Context}
-Inter-process Communication is a vital part of computer science and facilitates an operating system or a distributed system a way to let different processes communicate and cooperate to accomplish a task.  While IPC is inescapable to accommodate cooperation and communication between processes it also numerous problems such as reliability and fault tolerance. A system must be resilient enough to deal with failures to ensure consistency and reliability. The performance overhead must also be optimized since processes that use IPC incur a overhead in computational and memory resources. Furthermore IPC is also inherently more vulnerable to security threats, this must be managed to ensure the confidentiality and integrity of the data.  A system must also be synchronized  to avoid race conditions or a system must have ways to deal with race conditions. If a system uses shared memory across processes this must be well managed to ensure its correctness.
+Inter-process Communication is a vital part of computer science and facilitates an operating system\cite{stevens1999unix} or a distributed system\cite{geeksforgeeks2019ipc} a way to let different processes communicate and cooperate to accomplish a task.  While IPC is inescapable to accommodate cooperation and communication between processes it also numerous problems such as reliability and fault tolerance. A system must be resilient enough to deal with failures to ensure consistency and reliability. The performance overhead must also be optimized since processes that use IPC incur a overhead in computational and memory resources. Furthermore IPC is also inherently more vulnerable to security threats\cite{mitre2024ipc}, this must be managed to ensure the confidentiality and integrity of the data.  A system must also be synchronized  to avoid race conditions or a system must have ways to deal with race conditions. If a system uses shared memory across processes this must be well managed to ensure its correctness.
 IPC is a well established in computer science. 
 
 \subsection{Problem statement}
@@ -304,7 +310,7 @@ Since one of the requirements of the implementation is that operation without fa
 \par The goal of the experimental setup is that the implementation will be tested on performance.  The performance tests that will include the testing performance of both the implementation with and without the commit and remove procedure. For both of these the performance of the sending and receiving of messages will be measured. The performance of the Restart and Rollback procedure will also be measured. The performance of the rollback procedure will also be measured when dealing with concurrent failures from another process. Afterwards the measurements of both of the implementations will be compared.
 
 \subsection{Implementation Details}
-\par The implementation of the improved Peterson-Kearns rollback recovery protocol is written in C++ version 20.
+\par The implementation of the improved Peterson-Kearns rollback recovery protocol is written in C++ version 20 and is provided in appendices A and B.
 \subsubsection*{State class}
 The State class contains all components needed to maintain a consistent state. the main components of the class are the id of the process, the number of messages in volatile storage, the event log containing the message events, time vector,  failure vector, the file descriptors of all other processes(these will be used to resend lost messages), checkpoints and checkpoint time vectors, a set arrived messages and a set of arrived control messages. The version of the class where committing and removing messages is possible the State class also includes a vector to track if the commit or remove procedures can be executed, a set of committed messages, a set of committed receive events form the other processes and a minimal time vector to calculate the messages that can be committed and removed. The most important methods of the State class are listed below.
 \par Public methods:
@@ -367,6 +373,8 @@ The \textbf{send\_void} function is included in the  namespace Pet\_kea. It send
 	\item \textbf{COMM4:} This message will contain the receive events from messages send by the receiver of this COMM message that have been committed by the sender of the COMM message in addition to this the amount of these receive events in the message. This message will be sent by the non-initiators of the commit procedure only. 
 \end{itemize}
 \par The event log consists of an array of structs that contain the send and receive events that are stored, message size, the ID of the message that send the message, the time vector at the moment of sending, the time vector at the moment of receiving and the failure vector at the moment of sending. it also contains the index of the next checkpoint and a boolean indicating if the messages is a send or a receive event.
+\par The checkpointing file in stable storage is organized as follows: at the start of the file an integers will be stored with the amount of total checkpoints in the file. Afterwards the checkpoints will be stored. the header of the checkpoint will consist of two integers and the time vector of the checkpoint. The initial integers will consist of the messages stored in total at the time the checkpoint will be made and the messages stored in total at the checkpoint before this one. The actual checkpoint data will be the serialized msg\_log\_t. 
+\par The committal file will be populated with the serialized msg\_log\_t of the committed messages.
 
 \subsection{Experimental Setup}
 The experimental setup that was used to measure the overhead cost of the implementation operates as follows:
@@ -376,6 +384,7 @@ The child processes will use a select loop to deal with the incoming messages of
 \par The measurements are taken using the chrono::high\_resolution\_clock from time.h.  The measurements of the overhead cost for sending and receiving and checkpointing are taken by only measuring how long it took to complete the \textbf{send\_msg}, \textbf{recv\_msg} and \textbf{checkpoint} methods. For the restart time cost measurements are taken by measuring the time it took for the class to be initialized and transmit all control messages and thus resume normal execution using increasing number of messages stored in stable storage. For the rollback time cost measurements is the time it takes from the moment the process receives the control message until it has handled the rollback procedure and resumed normal operation, each subsequent time using increasing number of messages stored in its event log to determine what effect this has on the rollback procedure.
 The communication overhead and stable storage memory overhead is calculated using the serialized size of the message and event log. The RAM memory overhead is calculated by the used memory space by the event log struct and the size of the accompanying vectors.
 The measurements are saved in a CSV file to be able to analyses the results more easily. 
+\par The implementation of the experimental setup can be found at GitHub\cite{implementation}.
 \par In addition to the performance test a correctness test will be performed, various scenarios will be checked to indicate the correctness of the implementation. 
 
 
@@ -442,10 +451,20 @@ In figure \ref{fig:concurrent_rollback} the rollback cost when dealing with conc
 
 
 \subsection{Correctness indication}%think of some scenarios to test.
-
+\par To provide a Correctness indication a couple of scenarios will be tested:
+\begin{itemize}
+	\item \textit{Duplicate}: Duplicate messages will be handled by checking if a set contains the time and failure vectors, afterwards the vectors will be inserted into the set. These will be removed when checkpoints get removed and no more duplicate messages can be sent and is thus not needed any more. The implementation for this is provided in appendix A:93 and A:1372
+	\item \textit{Duplicate-control}: Duplicate control messages will be handled by checking if a set contains its id, failure\_number and restart\_time, afterwards these values will be added to the set as an entry. The implementation for this is provided in appendix A:106.
+	\item \textit{Orphan-arrived}: Whenever a rollback procedure is called orphaned events will be removed from the message log. An event \(e_i\) is orphaned if \(e_i.T^i > restart\_time\). if the event \(e_i\) is a receive event then \(e_i.T^i_{sender} > restart\_time \land e_i.F^i_{sender} < failure\_number\). Restart\_time and failure\_number are the values contained in the control message. The implementation for this is provided in appendix A:880.
+	\item \textit{Orphan-in-transit}: Whenever a message is received the check\_orphan method is called. This method will check if there exists a entry\((j,n,T^{j})\) in the failure log that has \(msg.F^{j} < n \land msg.T^{j} > T^{j}\), if this exists the message is a orphan-in-transit message and will be ignored. the method will be provided in appendix A:129.	
+	\item \textit{Childless-lost}:  To resolve childless-lost event all send events that are not lost or orphaned but have their receive event lost in the failure will eb re-transmitted. The implementation for this is provided in appendix A:966
+	\item \textit{Childless-Orphaned}: To resolve childless-orphan events all send events that are not lost or orphaned and have their corresponding receive event is orphaned in the rollback procedure will be replayed. The implementation for this is provided in appendix A:931.
+\end{itemize}
+\par This provides a rudimentary correctness indication for the implementation.
 
 
 \subsection{Future Work}
+\par For future implementation work the removal of checkpoints could be improved since it now takes a considerable performance penalty to evoke the method. Another point that could be improved is the return value when a process receives a control message and performs the rollback, right now it is just indicated that a rollback has been performed and not what messages have been removed  during the rollback. Another improvement that could be made is a more specified error handling with setting the errno correctly. Some changes could also be made to add more constructors to the msg\_log\_t like the copy and assignment constructors. The serialization of the data to be send and stored could also be handled by some library like Protobuf\cite{protobuf} to facilitate streamlined compatibility with other programming languages. The way committed messages are stored could be altered to a more structured state to provide processes using the committed data an easy understanding of the way the data is stored. Another change that would be welcome is the addition of  shadow paging this would increase the fault tolerance of the implementation  to ensure data is still valid if a crash occurred in the middle of a write operation.
 
 
 \section{Conclusion}
